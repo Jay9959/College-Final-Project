@@ -18,7 +18,11 @@ const server = http.createServer(app);
 // Initialize Socket.IO with CORS
 const io = new Server(server, {
     cors: {
-        origin: ['http://192.168.1.41:4200', 'http://127.0.0.1:4200'],
+        origin: [
+            'http://localhost:4200',
+            'http://127.0.0.1:4200',
+            process.env.CLIENT_URL // Add your Vercel URL here via environment variable
+        ],
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true
     }
@@ -29,7 +33,11 @@ connectDB();
 
 // Middleware
 app.use(cors({
-    origin: ['http://192.168.1.41:4200', 'http://127.0.0.1:4200'],
+    origin: [
+        'http://localhost:4200',
+        'http://127.0.0.1:4200',
+        process.env.CLIENT_URL
+    ],
     credentials: true
 }));
 app.use(express.json());

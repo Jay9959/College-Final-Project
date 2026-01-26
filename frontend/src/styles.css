@@ -1,0 +1,145 @@
+/* ========================================
+   GLOBAL STYLES - Premium Chat App (Glassmorphism)
+   ======================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Premium Palette */
+  --primary-color: #00d2ad;
+  --primary-gradient: linear-gradient(135deg, #00d2ad 0%, #009b85 100%);
+  --secondary-gradient: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%);
+
+  /* Backgrounds */
+  --bg-dark: #0f172a;
+  --bg-darker: #020617;
+  --bg-glass: rgba(15, 23, 42, 0.6);
+  --bg-glass-heavy: rgba(15, 23, 42, 0.85);
+  --bg-panel: rgba(30, 41, 59, 0.7);
+
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Borders & Shadows */
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --shadow-glow: 0 0 20px rgba(0, 210, 173, 0.3);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* Status */
+  --online: #22c55e;
+  --offline: #64748b;
+
+  /* Transitions */
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html,
+body {
+  height: 100%;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  background-color: var(--bg-darker);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(0, 210, 173, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(127, 0, 255, 0.15) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Form Elements */
+input {
+  font-family: inherit;
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid var(--border-glass) !important;
+  color: white !important;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s var(--ease-smooth);
+}
+
+input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(0, 210, 173, 0.2) !important;
+  background: rgba(15, 23, 42, 0.8) !important;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.5s var(--ease-smooth) forwards;
+}

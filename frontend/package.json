@@ -3,9 +3,9 @@
     "version": "1.0.0",
     "scripts": {
         "ng": "ng",
-        "start": "npm start",
-        "build": "npm run build",
-        "watch": "npm run watch"
+        "start": "ng serve",
+        "build": "ng build",
+        "watch": "ng build --watch --configuration development"
     },
     "private": true,
     "dependencies": {

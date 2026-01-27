@@ -39,14 +39,15 @@ const socketHandler = (io) => {
         // Handle sending messages
         socket.on('send-message', async (data) => {
             try {
-                const { senderId, receiverId, content, messageType = 'text' } = data;
+                const { senderId, receiverId, content, messageType = 'text', fileUrl } = data;
 
                 // Save message to database
                 const message = await Message.create({
                     sender: senderId,
                     receiver: receiverId,
                     content,
-                    messageType
+                    messageType,
+                    fileUrl
                 });
 
                 // Populate sender and receiver info

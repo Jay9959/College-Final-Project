@@ -104,4 +104,10 @@ export class AuthService {
     getCurrentUser(): User | null {
         return this.currentUserSubject.value;
     }
+
+    getProfile(): Observable<AuthResponse> {
+        return this.http.get<AuthResponse>(`${this.apiUrl}/auth/me`).pipe(
+            tap(response => this.handleAuthResponse(response))
+        );
+    }
 }

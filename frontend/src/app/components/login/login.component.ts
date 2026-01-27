@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -9,249 +9,408 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="login-wrapper">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
+    <div class="login-container">
+      <!-- Background Image -->
+      <div class="bg-image"></div>
       
-      <div class="glass-card animate-fade-up">
-        <div class="header">
-          <div class="icon-box">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-          </div>
-          <h1>Welcome Back</h1>
-          <p>Enter your credentials to access your chats.</p>
-        </div>
+      <!-- Overlay -->
+      <div class="overlay"></div>
 
-        <form (ngSubmit)="onLogin()" #loginForm="ngForm">
-          <div class="input-group">
-            <label>Email or Username</label>
-            <div class="input-wrapper">
-              <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+      <div class="content-wrapper">
+        <!-- Left Side (Empty/Spacer) -->
+        <div class="spacer"></div>
+
+        <!-- Right Side (Login Form) -->
+        <div class="login-card animate-fade-in">
+          
+          <!-- Toggle Header -->
+          <div class="auth-toggle">
+            <span class="active">Sign in</span>
+            <span class="inactive">Sign up</span>
+          </div>
+
+          <div class="header">
+            <h2>Welcome back! Please login to your account</h2>
+          </div>
+
+          <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+            
+            <div class="form-group">
+              <label>Email</label>
               <input 
                 type="text" 
-                name="email"
-                [(ngModel)]="email"
+                name="email" 
+                [(ngModel)]="email" 
+                placeholder="ani@gmail.com"
                 required
-                placeholder="Username or Email"
                 [class.error]="emailInput.invalid && emailInput.touched"
                 #emailInput="ngModel"
               >
             </div>
-          </div>
 
-          <div class="input-group">
-            <label>Password</label>
-            <div class="input-wrapper">
-              <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              <input 
-                type="password" 
-                name="password"
-                [(ngModel)]="password"
-                required
-                placeholder="••••••••"
-              >
+            <div class="form-group">
+              <label>Password</label>
+              <div class="password-wrapper">
+                <input 
+                  type="password" 
+                  name="password" 
+                  [(ngModel)]="password" 
+                  placeholder="••••••••••••"
+                  required
+                >
+                <i class="eye-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </i>
+              </div>
             </div>
-          </div>
 
-          <div class="error-banner" *ngIf="errorMessage">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            {{ errorMessage }}
-          </div>
+            <div class="form-options">
+              <label class="checkbox-container">
+                <input type="checkbox">
+                <span class="checkmark"></span>
+                Remember Me
+              </label>
+              <a href="#" class="forgot-password">Forgot Password?</a>
+            </div>
 
-          <button type="submit" class="btn-glow" [disabled]="loginForm.invalid || isLoading">
-            <span *ngIf="!isLoading">Sign In</span>
-            <div *ngIf="isLoading" class="spinner-sm"></div>
-          </button>
-        </form>
+            <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
 
-        <div class="footer">
-          <p>Don't have an account? <a routerLink="/register">Create one</a></p>
+            <button type="submit" class="btn-primary" [disabled]="loginForm.invalid || isLoading">
+              <span *ngIf="!isLoading">Login</span>
+              <span *ngIf="isLoading" class="loader"></span>
+            </button>
+
+            <div class="footer-links">
+              <p>Don't have an account? <a routerLink="/register">Sign Up</a></p>
+            </div>
+
+            <div class="social-login">
+              <p>OR</p>
+              <div class="social-icons">
+                <button type="button" class="social-btn google" (click)="loginWith('google')">
+                   <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                </button>
+                <button type="button" class="social-btn apple" (click)="loginWith('apple')">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg"><path d="M17.05 20.28c-.98.95-2.05 0-3.08-1.05-1.07-1.07-2.79-1.07-3.83 0-1.05 1.05-2.13 2.03-3.07 1.03-2.18-2.32-3.82-7.85-.29-11.45 2.1-2.14 5.92-1.74 7.6.4 1.07 1.34 3.03 1.34 4.12 0 1.28-1.59 4.31-2.48 6.94-.36.1 2.32-2.18 3.32-2.58 3.92-3.1 4.67-4.43 4.67-4.47 4.74h-.05c-2.3 1.15-4.04 4.09-3.99 7 .1 5.37 5.76 7.42 5.95 7.49-.03.11-1.05 3.39-3.23 5.58z M13 6.95C12.16 3.99 15.65 1.58 17.5 1c.52 3.8-3.32 6.74-4.5 5.95z"/></svg>
+                </button>
+                <button type="button" class="social-btn github" (click)="loginWith('github')">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </button>
+              </div>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .login-wrapper {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-      padding: 20px;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
 
-    /* Ambient Background Blobs */
-    .blob {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      z-index: -1;
-      opacity: 0.6;
-    }
-    .blob-1 {
-      top: -10%;
-      left: -10%;
-      width: 500px;
-      height: 500px;
-      background: rgba(0, 210, 173, 0.3);
-      animation: float 8s ease-in-out infinite;
-    }
-    .blob-2 {
-      bottom: -10%;
-      right: -10%;
-      width: 600px;
-      height: 600px;
-      background: rgba(127, 0, 255, 0.25);
-      animation: float 10s ease-in-out infinite reverse;
-    }
-
-    .glass-card {
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 48px;
-      border-radius: 24px;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .icon-box {
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, var(--primary-color), #009b85);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 24px;
-      color: white;
-      box-shadow: 0 10px 25px rgba(0, 210, 173, 0.4);
-      transform: rotate(-5deg);
-    }
-
-    h1 {
-      font-size: 28px;
-      margin-bottom: 8px;
-      background: linear-gradient(to right, #fff, #94a3b8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    p { color: var(--text-secondary); font-size: 15px; }
-
-    .input-group { margin-bottom: 20px; }
-    
-    label {
+    :host {
       display: block;
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      height: 100vh;
+      font-family: 'Rajdhani', sans-serif;
     }
 
-    .input-wrapper {
+    .login-container {
       position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
     }
 
-    .input-icon {
+    /* Background with fallback */
+    .bg-image {
       position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      pointer-events: none;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop'); /* Placeholder Space Image */
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 60%, rgba(0,0,0,0.95) 100%);
+      z-index: 2;
+    }
+
+    .content-wrapper {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      height: 100%;
+      padding: 40px;
+    }
+
+    .spacer {
+      flex: 1;
+      display: none; /* Hidden on mobile */
+    }
+
+    @media (min-width: 768px) {
+      .spacer { display: block; }
+    }
+
+    /* Glassmorphism Card */
+    .login-card {
+      width: 100%;
+      max-width: 450px;
+      padding: 3rem 2.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin: auto 0;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Animations */
+    .animate-fade-in {
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Toggle Header */
+    .auth-toggle {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 25px;
+      font-family: 'Orbitron', 'Rajdhani', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .auth-toggle span {
+      cursor: pointer;
+      position: relative;
+      color: rgba(255,255,255,0.4);
       transition: color 0.3s;
     }
 
-    input {
+    .auth-toggle span.active {
+      color: #fff;
+    }
+
+    .auth-toggle span.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
       width: 100%;
-      padding: 14px 16px 14px 48px;
-      border-radius: 12px;
+      height: 2px;
+      background: #3b82f6; /* Blue accent */
+      box-shadow: 0 0 10px #3b82f6;
+    }
+
+    /* Header */
+    .header h2 {
+      font-size: 18px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 30px;
+      line-height: 1.4;
+    }
+
+    /* Inputs */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-family: inherit;
       font-size: 15px;
+      transition: all 0.3s;
     }
 
-    input:focus + .input-icon, input:focus ~ .input-icon {
-      color: var(--primary-color);
+    .form-group input:focus {
+      outline: none;
+      background: rgba(255,255,255,0.1);
+      border-color: #3b82f6;
     }
 
-    .btn-glow {
+    .password-wrapper {
+      position: relative;
+    }
+
+    .eye-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.4);
+      cursor: pointer;
+    }
+
+    /* Checkbox & Forgot Password */
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      font-size: 13px;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-container input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+
+    .checkmark {
+      height: 16px;
+      width: 16px;
+      background-color: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .checkbox-container input:checked ~ .checkmark {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .forgot-password {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .forgot-password:hover {
+      color: #fff;
+    }
+
+    /* Button */
+    .btn-primary {
       width: 100%;
-      padding: 16px;
-      border-radius: 12px;
-      background: var(--primary-gradient);
+      padding: 14px;
+      background: #3b82f6;
+      border: none;
+      border-radius: 8px;
       color: white;
       font-weight: 600;
       font-size: 16px;
-      margin-top: 12px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 15px rgba(0, 210, 173, 0.3);
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+      transition: all 0.3s;
     }
 
-    .btn-glow:hover:not(:disabled) {
+    .btn-primary:hover:not(:disabled) {
+      background: #2563eb;
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 210, 173, 0.5);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
     }
 
-    .btn-glow:disabled {
+    .btn-primary:disabled {
       opacity: 0.7;
       cursor: not-allowed;
     }
 
-    .error-banner {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .footer {
-      margin-top: 32px;
+    /* Footer */
+    .footer-links {
       text-align: center;
+      margin-top: 20px;
       font-size: 14px;
-      color: var(--text-secondary);
+      color: rgba(255,255,255,0.6);
     }
 
-    .footer a {
-      color: var(--primary-color);
+    .footer-links a {
+      color: #3b82f6;
+      text-decoration: none;
       font-weight: 600;
     }
-    
-    .footer a:hover { text-decoration: underline; }
 
-    .spinner-sm {
+    .social-login {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .social-login p {
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .social-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .social-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .loader {
       width: 20px;
       height: 20px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: white;
+      border: 2px solid #fff;
+      border-bottom-color: transparent;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto;
+      display: inline-block;
+      animation: rotation 1s linear infinite;
+    }
+
+    @keyframes rotation {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   `]
 })
@@ -263,8 +422,34 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
+
+  ngOnInit(): void {
+    // Check for token in URL (from social login redirect)
+    this.route.queryParams.subscribe(params => {
+      const token = params['token'];
+      if (token) {
+        this.handleSocialLoginSuccess(token);
+      }
+    });
+  }
+
+  handleSocialLoginSuccess(token: string): void {
+    localStorage.setItem('token', token);
+
+    this.authService.getProfile().subscribe({
+      next: (user) => {
+        this.router.navigate(['/chat']);
+      },
+      error: (err) => {
+        console.error('Failed to fetch user profile', err);
+        // Fallback or show error, but we have token so maybe retry
+        this.router.navigate(['/chat']);
+      }
+    });
+  }
 
   onLogin(): void {
     if (!this.email || !this.password) return;
@@ -281,5 +466,10 @@ export class LoginComponent {
         this.errorMessage = error.error?.message || 'Login failed. Please try again.';
       }
     });
+  }
+
+  loginWith(provider: string): void {
+    const backendUrl = 'http://localhost:5000/api/auth';
+    window.location.href = `${backendUrl}/${provider}`;
   }
 }

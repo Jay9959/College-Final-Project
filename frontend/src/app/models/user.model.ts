@@ -1,6 +1,7 @@
 export interface User {
     _id: string;
     username: string;
+    fullName?: string;
     email: string;
     avatar?: string;
     isOnline: boolean;
@@ -11,6 +12,7 @@ export interface User {
 export interface AuthResponse {
     _id: string;
     username: string;
+    fullName?: string;
     email: string;
     avatar?: string;
     isOnline: boolean;

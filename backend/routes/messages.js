@@ -2,6 +2,73 @@ const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
 const { protect } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const ChatFile = require('../models/ChatFile');
+
+// Configure Multer (Memory Storage)
+const storage = multer.memoryStorage();
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+});
+
+// @route   POST /api/messages/upload
+// @desc    Upload a file for chat (Stored in MongoDB)
+// @access  Private
+router.post('/upload', protect, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Please upload a file' });
+        }
+
+        // Create new ChatFile document
+        const newFile = new ChatFile({
+            filename: req.file.originalname,
+            mimetype: req.file.mimetype,
+            data: req.file.buffer,
+            size: req.file.size,
+            uploader: req.user._id
+        });
+
+        const savedFile = await newFile.save();
+
+        // Return a URL that points to the file serving route
+        // We use a relative path that the frontend will prepend with base URL
+        const fileUrl = `api/messages/file/${savedFile._id}`;
+
+        res.json({
+            message: 'File uploaded successfully',
+            fileUrl: fileUrl,
+            filename: req.file.originalname,
+            mimetype: req.file.mimetype
+        });
+    } catch (error) {
+        console.error('Upload file error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// @route   GET /api/messages/file/:id
+// @desc    Serve a file from MongoDB
+// @access  Public (or Private if you want strict security)
+router.get('/file/:id', async (req, res) => {
+    try {
+        const file = await ChatFile.findById(req.params.id);
+        if (!file) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+
+        res.set('Content-Type', file.mimetype);
+        res.send(file.data);
+    } catch (error) {
+        console.error('File serve error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
 
 // @route   GET /api/messages/:userId
 // @desc    Get chat history with a specific user

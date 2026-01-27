@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const socketHandler = require('./socket/socketHandler');
+const passport = require('passport');
+require('./config/passport'); // Passport config
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -21,6 +23,7 @@ const io = new Server(server, {
         origin: [
             'http://localhost:4200',
             'http://127.0.0.1:4200',
+            'http://192.168.1.147:4200',
             process.env.CLIENT_URL // Add your Vercel URL here via environment variable
         ],
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -36,14 +39,17 @@ app.use(cors({
     origin: [
         'http://localhost:4200',
         'http://127.0.0.1:4200',
+        'http://192.168.1.147:4200',
         process.env.CLIENT_URL
     ],
     credentials: true
 }));
 app.use(express.json());
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(passport.initialize());
 
-// Serve uploaded files
+// Serve static files
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

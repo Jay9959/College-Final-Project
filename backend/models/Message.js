@@ -13,13 +13,24 @@ const messageSchema = new mongoose.Schema({
     },
     content: {
         type: String,
-        required: [true, 'Message content is required'],
         trim: true
+    },
+    fileUrl: {
+        type: String
     },
     messageType: {
         type: String,
-        enum: ['text', 'image', 'file'],
+        enum: ['text', 'image', 'file', 'audio', 'video'],
         default: 'text'
+    },
+    fileData: {
+        type: Buffer // Store file binary data
+    },
+    fileName: {
+        type: String // Store original filename
+    },
+    mimeType: {
+        type: String // Store mime type for serving
     },
     delivered: {
         type: Boolean,

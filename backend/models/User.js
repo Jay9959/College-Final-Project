@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
         trim: true,
         minlength: [3, 'Username must be at least 3 characters']
     },
+    fullName: {
+        type: String,
+        default: ''
+    },
     email: {
         type: String,
         required: [true, 'Email is required'],
@@ -19,10 +23,13 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: false, // Changed from true to false for social login
         minlength: [6, 'Password must be at least 6 characters'],
         select: false
     },
+    googleId: { type: String },
+    githubId: { type: String },
+    appleId: { type: String },
     avatar: {
         type: String,
         default: ''

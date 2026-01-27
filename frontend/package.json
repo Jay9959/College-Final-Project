@@ -2,11 +2,10 @@
     "name": "chat-frontend",
     "version": "1.0.0",
     "scripts": {
-        "start": "serve -s dist/chat-frontend -l 8080",
+        "start": "ng serve --host 0.0.0.0",
         "build": "ng build --configuration production",
         "watch": "ng build --watch --configuration development",
-        "predeploy": "npm run build",
-        "deploy": "serve -s dist/chat-frontend -l 8080"
+        "serve": "serve -s dist/chat-frontend"
     },
     "private": true,
     "dependencies": {

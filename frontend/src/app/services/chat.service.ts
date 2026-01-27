@@ -32,4 +32,13 @@ export class ChatService {
     getUnreadCount(): Observable<{ _id: string; count: number }[]> {
         return this.http.get<{ _id: string; count: number }[]>(`${this.apiUrl}/messages/unread/count`);
     }
+
+    uploadFile(file: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post<any>(`${this.apiUrl}/messages/upload`, formData, {
+            reportProgress: true,
+            observe: 'events'
+        });
+    }
 }

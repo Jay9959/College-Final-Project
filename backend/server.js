@@ -32,7 +32,7 @@ const io = new Server(server, {
 });
 
 // Connect to MongoDB
-connectDB();
+// connectDB(); // Called in startServer
 
 // Middleware
 app.use(cors({
@@ -45,7 +45,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
-app.use(express.json());
+
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
@@ -79,13 +79,24 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-    console.log(`
+
+const startServer = async () => {
+    try {
+        await connectDB();
+        server.listen(PORT, () => {
+            console.log(`
   ╔═══════════════════════════════════════════╗
   ║     Chat Server Running Successfully!     ║
   ╠═══════════════════════════════════════════╣
-  ║  API Server: http://localhost:${PORT}         ║
-  ║  Socket.IO:  ws://localhost:${PORT}           ║
+  ║  API Server: http://localhost:${PORT}     ║
+  ║  Socket.IO:  ws://localhost:${PORT}       ║
   ╚═══════════════════════════════════════════╝
   `);
-});
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

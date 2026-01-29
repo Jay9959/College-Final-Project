@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -33,7 +33,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     searchQuery = '';
     typingUsers: { [key: string]: boolean } = {};
     showSettings = false;
-    settingsView: 'main' | 'chats' | 'general' | 'account' | 'security' | 'request-info' | 'privacy' | 'video-voice' | 'app-lock' = 'main';
+    settingsView: 'main' | 'chats' | 'general' | 'account' | 'security' | 'request-info' | 'privacy' | 'video-voice' | 'app-lock' | 'media-quality' | 'media-auto-download' | 'notifications' | 'profile' = 'main';
     generalSettings = {
         startAtLogin: false,
         minimizeToTray: true,
@@ -54,16 +54,39 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         appLock: false,
         blockUnknownMessages: false
     };
+    notificationSettings = {
+        showBanner: 'Always',
+        showTaskbarBadge: 'Always',
+        messageNotifications: true,
+        showPreviews: true,
+        reactionNotifications: true,
+        statusReactions: true,
+        callNotifications: true,
+        incomingCallSounds: true,
+        incomingSounds: true,
+        outgoingSounds: false,
+        messageTone: 'Default',
+        groupTone: 'Default'
+    };
     videoSettings = {
         cameraDeviceId: '',
         micDeviceId: '',
         speakerDeviceId: ''
     };
     chatSettings = {
-        theme: 'System default',
-        wallpaper: 'Default',
+        theme: 'System default', // Will be synced with ThemeService
+        wallpaper: {
+            color: '#0b141a',
+            image: null as string | null, // Added image property
+            doodles: true
+        },
         mediaQuality: 'Standard',
-        autoDownload: 'Wi-Fi only',
+        autoDownload: {
+            photos: true,
+            audio: true,
+            videos: true,
+            documents: true
+        },
         spellCheck: true,
         replaceEmoji: true,
         enterIsSend: true
@@ -77,8 +100,51 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     tempPassword = '';
     tempConfirmPassword = '';
 
-    currentTheme: Theme = 'dark';
+    // --- Wallpaper Picker State ---
+    showWallpaperModal = false;
+
+    // Predefined Wallpapers Colors (Inspired by WhatsApp)
+    wallpaperColors = [
+        '#0b141a', // Default Dark
+        '#ffffff', // Default Light
+        '#e9edef', // WhatsApp Default
+        '#d1d7db',
+        '#aeac99',
+        '#7acba5',
+        '#c7e9fa',
+        '#adbdcc',
+        '#d6d0f0',
+        '#cecece',
+        '#f2fce5',
+        '#fef3bd',
+        '#fee2e9',
+        '#e1f9f2',
+        '#ffe9e6',
+        '#fff6d6',
+        '#f3f6f9',
+        '#2a3942', // Darker slate
+        '#622f42', // Deep mauve
+        '#1f2c34', // Dark blue-grey
+    ];
+
+    notificationTones = ['Default', 'Alert 1', 'Alert 2', 'Alert 3', 'Alert 4', 'Alert 5', 'Alert 6'];
+    private notificationAudio = new Audio();
+
+    tempWallpaper: { color: string, image: string | null, doodles: boolean } = {
+        color: '#0b141a',
+        image: null,
+        doodles: true
+    };
+
+    currentTheme: Theme = 'system';
     availableDevices: { kind: string, label: string, deviceId: string }[] = [];
+    activeNotifDropdown: string | null = null;
+
+    // --- Profile Editing State ---
+    isEditingName = false;
+    isEditingAbout = false;
+    tempProfileName = '';
+    tempProfileAbout = '';
 
     private typingTimeout: any;
     private subscriptions: Subscription[] = [];
@@ -97,6 +163,9 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     ngOnInit(): void {
         this.loadSettings();
+        if (this.notificationSettings.messageNotifications && "Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
         this.applyFontSize();
 
         this.subscriptions.push(
@@ -132,23 +201,26 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             this.videoSettings = JSON.parse(savedVideo);
         }
 
+
         const savedChat = localStorage.getItem('chatSettings');
         if (savedChat) {
             this.chatSettings = JSON.parse(savedChat);
-            // Apply saved theme
-            document.body.classList.remove('theme-dark', 'theme-light');
-            if (this.chatSettings.theme === 'Dark') {
-                document.body.classList.add('theme-dark');
-            } else if (this.chatSettings.theme === 'Light') {
-                document.body.classList.add('theme-light');
-            } else {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.body.classList.add('theme-dark');
-                } else {
-                    document.body.classList.add('theme-light');
-                }
-            }
         }
+
+        const savedNotif = localStorage.getItem('notificationSettings');
+        if (savedNotif) {
+            this.notificationSettings = { ...this.notificationSettings, ...JSON.parse(savedNotif) };
+        }
+
+        // Sync theme from Service (Source of Truth)
+        const currentServiceTheme = this.themeService.getTheme();
+        this.currentTheme = currentServiceTheme;
+
+        // Map service theme to UI display text if needed, or just use directly
+        if (currentServiceTheme === 'dark') this.chatSettings.theme = 'Dark';
+        else if (currentServiceTheme === 'light') this.chatSettings.theme = 'Light';
+        else if (currentServiceTheme === 'system') this.chatSettings.theme = 'System default';
+
 
         // Load App Lock Password
         const savedPassword = localStorage.getItem('appLockPassword');
@@ -168,6 +240,56 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         localStorage.setItem('securitySettings', JSON.stringify(this.securitySettings));
         localStorage.setItem('privacySettings', JSON.stringify(this.privacySettings));
         localStorage.setItem('videoSettings', JSON.stringify(this.videoSettings));
+        localStorage.setItem('chatSettings', JSON.stringify(this.chatSettings));
+        localStorage.setItem('notificationSettings', JSON.stringify(this.notificationSettings));
+    }
+
+    // --- Wallpaper Methods ---
+
+    onWallpaperFileSelected(event: any) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e: any) => {
+                this.tempWallpaper.image = e.target.result;
+                this.tempWallpaper.color = '#0b141a'; // Fallback color
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    openWallpaperModal() {
+        // Initialize temp with current settings
+        if (typeof this.chatSettings.wallpaper === 'string') {
+            // Handle legacy string value if exists
+            this.tempWallpaper = { color: '#0b141a', image: null, doodles: true };
+        } else {
+            // Ensure image property exists
+            this.tempWallpaper = {
+                color: this.chatSettings.wallpaper.color || '#0b141a',
+                image: (this.chatSettings.wallpaper as any).image || null,
+                doodles: this.chatSettings.wallpaper.doodles
+            };
+        }
+        this.showWallpaperModal = true;
+        this.showSettings = false; // Hide main settings temporarily
+    }
+
+    closeWallpaperModal() {
+        this.showWallpaperModal = false;
+        this.showSettings = true; // Re-open settings
+    }
+
+    selectWallpaperColor(color: string) {
+        this.tempWallpaper.color = color;
+        this.tempWallpaper.image = null; // Clear image when color selected
+    }
+
+    saveWallpaper() {
+        this.chatSettings.wallpaper = { ...this.tempWallpaper };
+        this.saveSettings();
+        this.showWallpaperModal = false;
+        this.showSettings = true;
     }
 
     toggleSecurityNotifications() {
@@ -225,11 +347,20 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                 }
             }),
             this.socketService.onReceiveMessage().subscribe(msg => {
+                // If checking the chat with this user
                 if (this.selectedUser && msg.sender._id === this.selectedUser._id) {
                     this.messages.push(msg);
                     this.shouldScrollToBottom = true;
                     this.markMessagesAsRead(msg.sender._id);
                     this.socketService.markMessagesSeen([msg._id], msg.sender._id, this.currentUser!._id);
+
+                    // Play 'Incoming Sound' if enabled (even if chat is open, usually a soft sound)
+                    if (this.notificationSettings.incomingSounds) {
+                        this.playNotificationSound('message'); // Or a generic 'in-chat' sound
+                    }
+                } else {
+                    // Message from someone else (or not in chat)
+                    this.handleIncomingNotification(msg);
                 }
             }),
             this.socketService.onUserTyping().subscribe(data => this.typingUsers[data.userId] = data.isTyping),
@@ -591,17 +722,21 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         });
     }
     // --- Settings & Themes ---
-    openSettings() {
+    openSettings(view: 'main' | 'chats' | 'general' | 'account' | 'security' | 'request-info' | 'privacy' | 'video-voice' | 'app-lock' | 'media-quality' | 'media-auto-download' | 'notifications' | 'profile' = 'main') {
         this.showSettings = true;
-        this.settingsView = 'main'; // Reset to main view on open
+        this.settingsView = view;
+        if (view === 'video-voice') {
+            this.loadMediaDevices();
+        }
     }
 
     closeSettings() {
         this.showSettings = false;
     }
 
-    navigateToSettings(view: 'main' | 'chats' | 'general' | 'account' | 'security' | 'request-info' | 'privacy' | 'video-voice' | 'app-lock') {
+    navigateToSettings(view: 'main' | 'chats' | 'general' | 'account' | 'security' | 'request-info' | 'privacy' | 'video-voice' | 'app-lock' | 'media-quality' | 'media-auto-download' | 'notifications' | 'profile') {
         this.settingsView = view;
+        this.showSettings = true;
         if (view === 'video-voice') {
             this.loadMediaDevices();
         }
@@ -610,6 +745,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     selectTheme(theme: Theme) {
         this.themeService.setTheme(theme);
         this.currentTheme = theme;
+
+        // Update chatSettings display
+        if (theme === 'dark') this.chatSettings.theme = 'Dark';
+        else if (theme === 'light') this.chatSettings.theme = 'Light';
+        else if (theme === 'system') this.chatSettings.theme = 'System default';
+
+        this.saveSettings();
     }
 
     applyFontSize() {
@@ -691,6 +833,188 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.saveSettings();
     }
 
+    // --- Media Auto-Download Logic ---
+    shouldShowMedia(message: Message): boolean {
+        // If it's my own message, always show
+        if (message.sender._id === this.currentUser?._id) return true;
+
+        // If manually downloaded, show
+        if (message.isManuallyDownloaded) return true;
+
+        const type = message.messageType;
+        const settings = this.chatSettings.autoDownload;
+
+        if (type === 'image' && settings.photos) return true;
+        if (type === 'video' && settings.videos) return true;
+        if (type === 'audio' && settings.audio) return true;
+        if (type === 'file' && settings.documents) return true;
+
+        // Note: Voice messages (audio with specific flag usually, but here just 'audio')
+        // WhatsApp says "Voice messages are always automatically downloaded". 
+        // If we want to strictly follow that, we need to distinguish voice notes from audio files.
+        // For now, treat all 'audio' as subject to the toggle, or we can force true if we had a way to know.
+        // Let's stick to the toggle for now as per user request for "Audio" toggle.
+
+        return false;
+    }
+
+    downloadMedia(message: Message) {
+        message.isManuallyDownloaded = true;
+        // In a real app, this might trigger a fetch if the URL was a placeholder. 
+        // Here we just reveal the content.
+    }
+
+    downloadFile(fileUrl?: string) {
+        if (!fileUrl) return;
+        const url = this.getAvatarUrl(fileUrl);
+        window.open(url, '_blank');
+    }
+
+    resetAutoDownloadSettings() {
+        this.chatSettings.autoDownload = {
+            photos: true,
+            audio: true,
+            videos: true,
+            documents: true
+        };
+        this.saveSettings();
+    }
+
+    // --- Notification Logic ---
+
+    handleIncomingNotification(msg: Message) {
+        // 1. Play Sound
+        if (this.notificationSettings.messageNotifications) {
+            // Differentiate Group vs Private if possible. detailed group logic depends on message structure.
+            // For now assuming private 'message' tone.
+            this.playNotificationSound('message');
+        }
+
+        // 2. Show System Notification
+        if (this.notificationSettings.messageNotifications && this.notificationSettings.showBanner !== 'Never') {
+            this.showBrowserNotification(msg);
+        }
+    }
+
+    playNotificationSound(type: 'message' | 'group') {
+        const tone = type === 'group' ? this.notificationSettings.groupTone : this.notificationSettings.messageTone;
+        if (tone === 'None') return;
+
+        // Map 'Alert 1' etc to generic sounds or a default
+        // Using a generic pleasant notification sound for 'Default' or any Alert for now
+        // In a real app, you'd map names to specific asset URLs
+        let soundUrl = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'; // Default Bell
+
+        // Example mapping (placeholders)
+        if (tone === 'Alert 1') soundUrl = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
+        if (tone === 'Alert 2') soundUrl = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
+
+        this.notificationAudio.src = soundUrl;
+        this.notificationAudio.play().catch((e: any) => console.warn('Audio play failed', e));
+    }
+
+    // --- Custom Dropdown Methods ---
+
+    toggleNotifDropdown(dropdownName: string, event: Event) {
+        event.stopPropagation();
+        if (this.activeNotifDropdown === dropdownName) {
+            this.activeNotifDropdown = null;
+        } else {
+            this.activeNotifDropdown = dropdownName;
+        }
+    }
+
+    selectNotifSetting(settingKey: string, value: any) {
+        (this.notificationSettings as any)[settingKey] = value;
+        this.saveSettings();
+        this.activeNotifDropdown = null;
+    }
+
+    @HostListener('document:click')
+    closeNotifDropdowns() {
+        this.activeNotifDropdown = null;
+    }
+
+    showBrowserNotification(msg: Message) {
+        if (!("Notification" in window)) return;
+
+        if (Notification.permission === "granted") {
+            const title = msg.sender.username || 'New Message';
+            const body = this.notificationSettings.showPreviews ? msg.content || 'Sent a file' : 'New Message';
+
+            const notification = new Notification(title, {
+                body: body,
+                icon: 'assets/icons/icon-128x128.png', // Ensure this exists or use logic
+                silent: true // We play our own sound
+            });
+
+            notification.onclick = () => {
+                window.focus();
+                // Logic to select user could go here
+                notification.close();
+            };
+        }
+    }
+
+    // --- Profile Methods ---
+    startEditName() {
+        this.isEditingName = true;
+        this.tempProfileName = this.currentUser?.username || '';
+    }
+
+    saveName() {
+        if (!this.tempProfileName.trim() || this.tempProfileName === this.currentUser?.username) {
+            this.isEditingName = false;
+            return;
+        }
+
+        this.authService.updateProfile({ username: this.tempProfileName }).subscribe({
+            next: (updatedUser) => {
+                this.isEditingName = false;
+                this.toastService.show('Name updated successfully');
+            },
+            error: (err) => {
+                console.error('Failed to update name', err);
+                this.toastService.show('Failed to update name', 'error');
+            }
+        });
+    }
+
+    cancelEditName() {
+        this.isEditingName = false;
+    }
+
+    startEditAbout() {
+        this.isEditingAbout = true;
+        this.tempProfileAbout = this.currentUser?.about || '';
+    }
+
+    saveAbout() {
+        if (this.tempProfileAbout === this.currentUser?.about) {
+            this.isEditingAbout = false;
+            return;
+        }
+
+        this.authService.updateProfile({ about: this.tempProfileAbout }).subscribe({
+            next: (updatedUser) => {
+                this.isEditingAbout = false;
+                this.toastService.show('About updated successfully');
+            },
+            error: (err) => {
+                console.error('Failed to update about', err);
+                this.toastService.show('Failed to update about', 'error');
+            }
+        });
+    }
+
+    cancelEditAbout() {
+        this.isEditingAbout = false;
+    }
+
+    refreshProfile() {
+        this.authService.getProfile().subscribe();
+    }
+
     closePasswordSetModal() {
         this.showPasswordSetModal = false;
     }
@@ -748,25 +1072,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     applyTheme() {
-        this.chatSettings.theme = this.tempTheme;
-        this.saveSettings();
-        this.closeThemeModal();
+        let themeToSet: Theme = 'system';
+        if (this.tempTheme === 'Dark') themeToSet = 'dark';
+        else if (this.tempTheme === 'Light') themeToSet = 'light';
+        else if (this.tempTheme === 'System default') themeToSet = 'system';
 
-        // Actually apply the theme class to body/app
-        // Assuming we have a service or simple logic
-        // For now, simple implementation:
-        document.body.classList.remove('theme-dark', 'theme-light');
-        if (this.tempTheme === 'Dark') {
-            document.body.classList.add('theme-dark');
-        } else if (this.tempTheme === 'Light') {
-            document.body.classList.add('theme-light');
-        } else {
-            // System default logic (could use window.matchMedia)
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.body.classList.add('theme-dark');
-            } else {
-                document.body.classList.add('theme-light');
-            }
-        }
+        this.selectTheme(themeToSet);
+        this.closeThemeModal();
     }
 }

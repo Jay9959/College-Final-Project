@@ -22,6 +22,7 @@ export interface Message {
     // Frontend only props
     uploadProgress?: number;
     localId?: string;
+    isManuallyDownloaded?: boolean;
 }
 
 export interface SendMessageData {

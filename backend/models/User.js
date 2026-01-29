@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    about: {
+        type: String,
+        default: 'Busy doing nothing...'
+    },
     isOnline: {
         type: Boolean,
         default: false

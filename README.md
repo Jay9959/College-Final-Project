@@ -24,7 +24,7 @@ A complete real-time chat application with one-to-one messaging, online/offline 
 
 ```
 Final Project College/
-├── chat-backend/
+├── backend/
 │   ├── config/db.js           # MongoDB connection
 │   ├── middleware/auth.js     # JWT auth middleware
 │   ├── models/
@@ -39,7 +39,7 @@ Final Project College/
 │   ├── .env                   # Environment variables
 │   └── package.json
 │
-├── chat-frontend/
+├── frontend/
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── components/    # Login, Register, Chat
@@ -81,9 +81,9 @@ mongod
 ### 3. Setup Backend
 
 ```bash
-cd chat-backend
+cd backend
 npm install
-npm start
+npm run dev
 ```
 
 Backend will run on: `http://localhost:5000`
@@ -91,7 +91,7 @@ Backend will run on: `http://localhost:5000`
 ### 4. Setup Frontend (New Terminal)
 
 ```bash
-cd chat-frontend
+cd frontend
 npm install
 npm start
 ```

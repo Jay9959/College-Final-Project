@@ -42,17 +42,18 @@
 
 /* Light Theme */
 .theme-light {
-  --bg-dark: #f1f5f9;
+  --bg-dark: #f8fafc;
   --bg-darker: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.7);
-  --bg-glass-heavy: rgba(255, 255, 255, 0.9);
-  --bg-panel: rgba(241, 245, 249, 0.8);
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-glass-heavy: rgba(255, 255, 255, 0.95);
+  --bg-panel: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --border-glass: rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 15px rgba(0, 210, 173, 0.15);
-  --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --border-glass: rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 15px rgba(0, 210, 173, 0.25);
+  --shadow-glass: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --offline: #cbd5e1;
 }
 
 /* Midnight Theme */

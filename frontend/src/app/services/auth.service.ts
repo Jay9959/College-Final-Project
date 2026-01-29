@@ -54,13 +54,26 @@ export class AuthService {
             username: response.username,
             email: response.email,
             avatar: response.avatar,
+            about: response.about,
             isOnline: response.isOnline,
             token: response.token
         };
         sessionStorage.setItem('user', JSON.stringify(user));
         sessionStorage.setItem('token', response.token);
         this.currentUserSubject.next(user);
-        this.currentUserSubject.next(user);
+    }
+
+    updateProfile(userData: { username?: string, avatar?: string, about?: string }): Observable<User> {
+        return this.http.put<User>(`${this.apiUrl}/users/profile`, userData).pipe(
+            tap(updatedUser => {
+                const currentUser = this.currentUserSubject.value;
+                if (currentUser) {
+                    const newUser = { ...currentUser, ...updatedUser };
+                    sessionStorage.setItem('user', JSON.stringify(newUser));
+                    this.currentUserSubject.next(newUser);
+                }
+            })
+        );
     }
 
     uploadAvatar(file: File): Observable<{ message: string, avatar: string }> {

@@ -5,7 +5,7 @@
             <div class="user-info">
                 <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept="image/*">
 
-                <div class="avatar-container" (click)="fileInput.click()" title="Change Profile Picture">
+                <div class="avatar-container" (click)="openSettings('profile')" title="View Profile">
                     <div *ngIf="!currentUser?.avatar" class="avatar">
                         {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
                     </div>
@@ -72,6 +72,11 @@
 
     <!-- Chat Area -->
     <main class="chat-area" [class.mobile-show]="selectedUser">
+        <!-- Wallpaper Background -->
+        <div class="chat-wallpaper" [style.background-color]="chatSettings.wallpaper.color || '#0b141a'"
+            [style.background-image]="chatSettings.wallpaper.image ? 'url(' + chatSettings.wallpaper.image + ')' : null"
+            [class.has-doodles]="chatSettings.wallpaper.doodles && !chatSettings.wallpaper.image">
+        </div>
         <div *ngIf="!selectedUser" class="no-chat">
             <div class="no-chat-content animate-fade-in">
                 <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="1.5">
@@ -153,20 +158,48 @@
 
                         <!-- Image Message -->
                         <div *ngIf="message.messageType === 'image'" class="message-image">
-                            <img [src]="getAvatarUrl(message.fileUrl)" alt="Image"
+                            <!-- Show Image if auto-downloaded or manually downloaded -->
+                            <img *ngIf="shouldShowMedia(message)" [src]="getAvatarUrl(message.fileUrl)" alt="Image"
+                                (click)="downloadFile(message.fileUrl)" title="Click to open"
                                 style="max-width: 150px; max-height: 200px; object-fit: cover; border-radius: 12px; cursor: pointer;">
+
+                            <!-- Download Placeholder -->
+                            <div *ngIf="!shouldShowMedia(message)" class="media-placeholder"
+                                (click)="downloadMedia(message)">
+                                <div class="download-icon-wrapper">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </div>
+                                <span>Photo • Click to download</span>
+                            </div>
                         </div>
 
                         <!-- Video Message -->
                         <div *ngIf="message.messageType === 'video'" class="message-video">
-                            <video controls [src]="getAvatarUrl(message.fileUrl)"
+                            <video *ngIf="shouldShowMedia(message)" controls [src]="getAvatarUrl(message.fileUrl)"
                                 style="max-width: 250px; max-height: 250px; border-radius: 12px;"></video>
+
+                            <!-- Download Placeholder -->
+                            <div *ngIf="!shouldShowMedia(message)" class="media-placeholder"
+                                (click)="downloadMedia(message)">
+                                <div class="download-icon-wrapper">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </div>
+                                <span>Video • Click to download</span>
+                            </div>
                         </div>
 
                         <!-- Generic File Message -->
                         <div *ngIf="message.messageType === 'file'" class="message-file"
                             style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                            <a [href]="getAvatarUrl(message.fileUrl)" target="_blank"
+                            <a *ngIf="shouldShowMedia(message)" [href]="getAvatarUrl(message.fileUrl)" target="_blank"
                                 style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
                                 <div class="file-icon">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -181,11 +214,37 @@
                                         open</span>
                                 </div>
                             </a>
+                            <!-- Download Placeholder for Files -->
+                            <div *ngIf="!shouldShowMedia(message)" class="media-placeholder small"
+                                (click)="downloadMedia(message)"
+                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <div class="download-icon-wrapper small">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </div>
+                                <span>{{ message.content }} • Click to download</span>
+                            </div>
                         </div>
 
                         <!-- Audio Message -->
                         <div *ngIf="message.messageType === 'audio'" class="message-audio">
-                            <audio controls [src]="getAvatarUrl(message.fileUrl)" style="max-width: 200px;"></audio>
+                            <audio *ngIf="shouldShowMedia(message)" controls [src]="getAvatarUrl(message.fileUrl)"
+                                style="max-width: 200px;"></audio>
+                            <!-- Download Placeholder -->
+                            <div *ngIf="!shouldShowMedia(message)" class="media-placeholder small"
+                                (click)="downloadMedia(message)">
+                                <div class="download-icon-wrapper small">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </div>
+                                <span>Audio • Download</span>
+                            </div>
                         </div>
 
                         <!-- Call Log Message -->
@@ -343,7 +402,7 @@
 
     <!-- Advanced Settings Modal -->
     <div class="settings-overlay" *ngIf="showSettings" (click)="closeSettings()">
-        <div class="settings-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="settings-modal" (click)="$event.stopPropagation()">
 
             <!-- MAIN VIEW -->
             <ng-container *ngIf="settingsView === 'main'">
@@ -358,7 +417,7 @@
 
                 <div class="settings-content">
                     <!-- Profile Card -->
-                    <div class="settings-profile-card">
+                    <div class="settings-profile-card" (click)="navigateToSettings('profile')">
                         <div class="profile-avatar-large">
                             <img *ngIf="currentUser?.avatar" [src]="getAvatarUrl(currentUser?.avatar)"
                                 style="width: 100%; height: 100%; object-fit: cover;">
@@ -369,7 +428,7 @@
                         </div>
                         <div class="profile-info">
                             <h3>{{ currentUser?.fullName || currentUser?.username }}</h3>
-                            <p class="profile-status">Busy doing nothing...</p>
+                            <p class="profile-status">{{ currentUser?.about || 'Busy doing nothing...' }}</p>
                         </div>
                     </div>
 
@@ -440,21 +499,10 @@
                             </div>
                         </div>
 
-                        <!-- Video & Voice -->
-                        <div class="menu-item">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Video & voice</h4>
-                                <p>Camera, microphone & speakers</p>
-                            </div>
-                        </div>
+
 
                         <!-- Notifications -->
-                        <div class="menu-item">
+                        <div class="menu-item" (click)="navigateToSettings('notifications')">
                             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -476,6 +524,140 @@
                             </svg>
                             <div class="menu-text">
                                 <h4>Log out</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- PROFILE VIEW -->
+            <ng-container *ngIf="settingsView === 'profile'">
+                <div class="settings-header profile-header">
+                    <button class="back-btn" (click)="navigateToSettings('main')">
+                        <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet" class=""
+                            fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M20 12H4"></path>
+                            <path d="M10 18l-6-6 6-6"></path>
+                        </svg>
+                        <span class="header-title">Profile</span>
+                    </button>
+                    <!-- Close button removed or moved as per WhatsApp Web usually just has back in drawer or separate logic -->
+                </div>
+
+                <div class="settings-content profile-content-premium animate-fade-in">
+                    <!-- Profile Picture Section -->
+                    <div class="profile-picture-container">
+                        <div class="profile-avatar-large-wrapper" (click)="fileInput.click()">
+                            <div *ngIf="!currentUser?.avatar" class="large-avatar">
+                                {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
+                            </div>
+                            <img *ngIf="currentUser?.avatar" [src]="getAvatarUrl(currentUser?.avatar)"
+                                class="large-avatar-img" alt="Profile Picture">
+                            <div class="change-photo-overlay">
+                                <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet"
+                                    class="" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 1.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z">
+                                    </path>
+                                    <path
+                                        d="M5.5 5.5A1.5 1.5 0 0 1 7 4h10a1.5 1.5 0 0 1 1.5 1.5v13A1.5 1.5 0 0 1 17 20H7a1.5 1.5 0 0 1-1.5-1.5v-13zM7 5.5v13h10v-13H7z"
+                                        style="display:none"></path>
+                                    <!-- A better camera icon path -->
+                                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z">
+                                    </path>
+                                    <path
+                                        d="M9 4.25l-1.42 1.5H5.25A2.25 2.25 0 0 0 3 8v10.5A2.25 2.25 0 0 0 5.25 20.75h13.5A2.25 2.25 0 0 0 21 18.5V8a2.25 2.25 0 0 0-2.25-2.25h-2.33l-1.42-1.5H9zM12 16.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z">
+                                    </path>
+                                </svg>
+                                <span>CHANGE PROFILE PHOTO</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Name Section -->
+                    <!-- Profile Name Section -->
+                    <div class="profile-section-group">
+                        <div class="profile-section">
+                            <span class="section-label">Your name</span>
+                            <div class="edit-field" *ngIf="!isEditingName">
+                                <span class="field-value">{{ currentUser?.username }}</span>
+                                <button class="edit-btn" (click)="startEditName()" title="Edit Name">
+                                    <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet"
+                                        class="" fill="currentColor" enable-background="new 0 0 24 24">
+                                        <path
+                                            d="M3.95,16.7v3.4h3.4l9.8-9.9l-3.4-3.4L3.95,16.7z M19.75,7.6c0.4-0.4,0.4-0.9,0-1.3l-2.1-2.1c-0.4-0.4-0.9-0.4-1.3,0l-1.6,1.6l3.4,3.4L19.75,7.6z">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="edit-input-wrapper animate-slide-in-right" *ngIf="isEditingName">
+                                <input type="text" [(ngModel)]="tempProfileName" (keyup.enter)="saveName()"
+                                    (keyup.escape)="cancelEditName()" maxlength="100" autofocus>
+                                <span class="char-count" [class.low]="100 - tempProfileName.length < 20">
+                                    {{ 100 - tempProfileName.length }}
+                                </span>
+                                <div class="edit-actions">
+                                    <button class="action-btn cancel" (click)="cancelEditName()" title="Cancel">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn save" (click)="saveName()" title="Save">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="section-note">This is not your username or pin. This name will be visible to your
+                                WhatsApp contacts.</p>
+                        </div>
+
+                        <div class="divider-inset"></div>
+
+                        <!-- Profile About Section -->
+                        <div class="profile-section">
+                            <span class="section-label">About</span>
+                            <div class="edit-field" *ngIf="!isEditingAbout">
+                                <span class="field-value">{{ currentUser?.about || 'Busy doing nothing...' }}</span>
+                                <button class="edit-btn" (click)="startEditAbout()" title="Edit About">
+                                    <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet"
+                                        class="" fill="currentColor" enable-background="new 0 0 24 24">
+                                        <path
+                                            d="M3.95,16.7v3.4h3.4l9.8-9.9l-3.4-3.4L3.95,16.7z M19.75,7.6c0.4-0.4,0.4-0.9,0-1.3l-2.1-2.1c-0.4-0.4-0.9-0.4-1.3,0l-1.6,1.6l3.4,3.4L19.75,7.6z">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="edit-input-wrapper animate-slide-in-right" *ngIf="isEditingAbout">
+                                <textarea rows="3" [(ngModel)]="tempProfileAbout" (keyup.enter)="saveAbout()"
+                                    (keyup.escape)="cancelEditAbout()" maxlength="1500" autofocus
+                                    class="edit-textarea"></textarea>
+                                <span class="char-count" [class.low]="1500 - tempProfileAbout.length < 50">
+                                    {{ 1500 - tempProfileAbout.length }}
+                                </span>
+                                <div class="edit-actions">
+                                    <button class="action-btn cancel" (click)="cancelEditAbout()" title="Cancel">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn save" (click)="saveAbout()" title="Save">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -517,9 +699,10 @@
                         </div>
 
                         <!-- Wallpaper -->
-                        <div class="setting-row">
+                        <div class="setting-row" (click)="openWallpaperModal()">
                             <div class="setting-info">
                                 <h4>Wallpaper</h4>
+                                <p>Change chat wallpaper</p>
                             </div>
                             <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -535,9 +718,11 @@
                         <h3>Chat settings</h3>
 
                         <!-- Media upload quality -->
-                        <div class="setting-row">
+                        <!-- Media upload quality -->
+                        <div class="setting-row" (click)="navigateToSettings('media-quality')">
                             <div class="setting-info">
                                 <h4>Media upload quality</h4>
+                                <p>{{ chatSettings.mediaQuality }} quality</p>
                             </div>
                             <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -546,15 +731,18 @@
                         </div>
 
                         <!-- Media auto-download -->
-                        <div class="setting-row">
+                        <div class="setting-row" (click)="navigateToSettings('media-auto-download')">
                             <div class="setting-info">
                                 <h4>Media auto-download</h4>
+                                <p>Voice messages are always automatically downloaded</p>
                             </div>
                             <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                         </div>
+
+
 
                         <div class="divider"></div>
 
@@ -595,6 +783,141 @@
                                     (change)="saveSettings()">
                                 <span class="switch-slider"></span>
                             </label>
+                        </div>
+
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- MEDIA QUALITY VIEW -->
+            <ng-container *ngIf="settingsView === 'media-quality'">
+                <div class="settings-header">
+                    <button class="back-btn" (click)="navigateToSettings('main')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Media upload quality
+                    </button>
+                    <button class="close-btn" (click)="closeSettings()">×</button>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+
+                        <!-- Standard Quality -->
+                        <div class="setting-row radio-row"
+                            (click)="chatSettings.mediaQuality = 'Standard'; saveSettings()">
+                            <div class="setting-info">
+                                <h4>Standard quality</h4>
+                                <p class="description">Standard media uses less storage and are faster to send</p>
+                            </div>
+                            <div class="custom-radio">
+                                <div class="radio-outer" [class.selected]="chatSettings.mediaQuality === 'Standard'">
+                                    <div class="radio-inner" *ngIf="chatSettings.mediaQuality === 'Standard'"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HD Quality -->
+                        <div class="setting-row radio-row" (click)="chatSettings.mediaQuality = 'HD'; saveSettings()">
+                            <div class="setting-info">
+                                <h4>HD quality</h4>
+                                <p class="description">HD media is slower to send, can be 6 times larger</p>
+                            </div>
+                            <div class="custom-radio">
+                                <div class="radio-outer" [class.selected]="chatSettings.mediaQuality === 'HD'">
+                                    <div class="radio-inner" *ngIf="chatSettings.mediaQuality === 'HD'"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </ng-container>
+
+
+
+            <!-- MEDIA AUTO-DOWNLOAD VIEW -->
+            <ng-container *ngIf="settingsView === 'media-auto-download'">
+                <div class="settings-header">
+                    <button class="back-btn" (click)="navigateToSettings('chats')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Media auto-download
+                    </button>
+                    <button class="close-btn" (click)="closeSettings()">×</button>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+
+                        <!-- Photos -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Photos</h4>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="chatSettings.autoDownload.photos" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Audio -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Audio</h4>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="chatSettings.autoDownload.audio" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Videos -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Videos</h4>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="chatSettings.autoDownload.videos" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Documents -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Documents</h4>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="chatSettings.autoDownload.documents" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <p class="description" style="padding: 0 20px; color: #8696a0; font-size: 14px;">
+                            Voice messages are always automatically downloaded for the best communication experience.
+                        </p>
+
+                        <div class="setting-row" style="margin-top: 20px; color: #8696a0;"
+                            (click)="resetAutoDownloadSettings()">
+                            <div class="setting-info" style="display: flex; align-items: center; gap: 10px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                    <path d="M3 3v5h5"></path>
+                                </svg>
+                                <h4>Reset auto-download settings</h4>
+                            </div>
                         </div>
 
                     </div>
@@ -1073,6 +1396,242 @@
                 </div>
             </ng-container>
 
+
+            <!-- NOTIFICATIONS VIEW -->
+            <ng-container *ngIf="settingsView === 'notifications'">
+                <div class="settings-header">
+                    <button class="back-btn" (click)="navigateToSettings('main')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Notifications
+                    </button>
+                    <button class="close-btn" (click)="closeSettings()">×</button>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+
+                        <!-- Show notification banner -->
+                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('banner', $event)">
+                            <div class="setting-info">
+                                <h4>Show notification banner</h4>
+                                <p>{{ notificationSettings.showBanner }}</p>
+                            </div>
+                            <div class="custom-dropdown-menu" *ngIf="activeNotifDropdown === 'banner'">
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.showBanner === 'Always'"
+                                    (click)="selectNotifSetting('showBanner', 'Always')">Always</div>
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.showBanner === 'When app is open'"
+                                    (click)="selectNotifSetting('showBanner', 'When app is open')">When app is open
+                                </div>
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.showBanner === 'Never'"
+                                    (click)="selectNotifSetting('showBanner', 'Never')">Never</div>
+                            </div>
+                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+
+                        <!-- Show taskbar notification badge -->
+                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('badge', $event)">
+                            <div class="setting-info">
+                                <h4>Show taskbar notification badge</h4>
+                                <p>{{ notificationSettings.showTaskbarBadge }}</p>
+                            </div>
+                            <div class="custom-dropdown-menu" *ngIf="activeNotifDropdown === 'badge'">
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.showTaskbarBadge === 'Always'"
+                                    (click)="selectNotifSetting('showTaskbarBadge', 'Always')">Always</div>
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.showTaskbarBadge === 'When app is open'"
+                                    (click)="selectNotifSetting('showTaskbarBadge', 'When app is open')">When app is
+                                    open</div>
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.showTaskbarBadge === 'Never'"
+                                    (click)="selectNotifSetting('showTaskbarBadge', 'Never')">Never</div>
+                            </div>
+                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+
+                        <hr class="divider">
+
+                        <h3>Messages</h3>
+
+                        <!-- Message notifications -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Message notifications</h4>
+                                <p>Show notifications for new messages</p>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.messageNotifications" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Show previews -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Show previews</h4>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.showPreviews" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Show reaction notifications -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Show reaction notifications</h4>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.reactionNotifications" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Status reactions -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Status reactions</h4>
+                                <p>Show notifications when you get likes on a status</p>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.statusReactions" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <hr class="divider">
+
+                        <h3>Calls</h3>
+
+                        <!-- Call notifications -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Call notifications</h4>
+                                <p>Show notifications for incoming calls</p>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.callNotifications" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Incoming calls -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Incoming calls</h4>
+                                <p>Play sounds for incoming calls</p>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.incomingCallSounds" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <hr class="divider">
+
+                        <h3>Notification tones</h3>
+
+                        <!-- Incoming sounds -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Incoming sounds</h4>
+                                <p>Play sounds for incoming messages</p>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.incomingSounds" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Outgoing sounds -->
+                        <div class="checkbox-row">
+                            <div class="checkbox-info">
+                                <h4>Outgoing sounds</h4>
+                                <p>Play sounds for outgoing messages</p>
+                            </div>
+                            <label class="switch-container">
+                                <input type="checkbox" class="switch-input"
+                                    [(ngModel)]="notificationSettings.outgoingSounds" (change)="saveSettings()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <br>
+
+                        <!-- Messages Tone -->
+                        <h3>Messages</h3>
+                        <div class="custom-select-box" (click)="toggleNotifDropdown('messageTone', $event)">
+                            <div class="selected-value">
+                                <svg class="tone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M9 18V5l12-2v13"></path>
+                                    <circle cx="6" cy="18" r="3"></circle>
+                                    <circle cx="18" cy="16" r="3"></circle>
+                                </svg>
+                                {{ notificationSettings.messageTone }}
+                            </div>
+                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'messageTone'"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'messageTone'">
+                                <div class="dropdown-item"
+                                    [class.selected]="notificationSettings.messageTone === 'None'"
+                                    (click)="selectNotifSetting('messageTone', 'None')">None</div>
+                                <div class="dropdown-item" *ngFor="let tone of notificationTones"
+                                    [class.selected]="notificationSettings.messageTone === tone"
+                                    (click)="selectNotifSetting('messageTone', tone)">{{ tone }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Group Messages Tone -->
+                        <h3>Group messages</h3>
+                        <div class="custom-select-box" (click)="toggleNotifDropdown('groupTone', $event)">
+                            <div class="selected-value">
+                                <svg class="tone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                {{ notificationSettings.groupTone }}
+                            </div>
+                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'groupTone'"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'groupTone'">
+                                <div class="dropdown-item" [class.selected]="notificationSettings.groupTone === 'None'"
+                                    (click)="selectNotifSetting('groupTone', 'None')">None</div>
+                                <div class="dropdown-item" *ngFor="let tone of notificationTones"
+                                    [class.selected]="notificationSettings.groupTone === tone"
+                                    (click)="selectNotifSetting('groupTone', tone)">{{ tone }}</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </ng-container>
             <!-- VIDEO & VOICE VIEW -->
             <ng-container *ngIf="settingsView === 'video-voice'">
                 <div class="settings-header">
@@ -1171,7 +1730,9 @@
             </ng-container>
 
         </div>
-    </div><!-- Set Password Modal -->
+
+    </div>
+
     <div class="modal-overlay" *ngIf="showSetPasswordModal">
         <div class="set-password-modal animate-scale-in">
             <h2>Set password</h2>
@@ -1260,34 +1821,104 @@
             </div>
         </div>
     </div><!-- Theme Selection Modal -->
-<div class="modal-overlay" *ngIf="showThemeModal">
-    <div class="theme-modal animate-scale-in">
-        <h2>Theme</h2>
+    <div class="modal-overlay" *ngIf="showThemeModal">
+        <div class="theme-modal animate-scale-in">
+            <h2>Theme</h2>
 
-        <div class="radio-option" (click)="tempTheme = 'Light'">
-            <div class="radio-circle">
-                <div class="radio-inner" *ngIf="tempTheme === 'Light'"></div>
+            <div class="radio-option" (click)="tempTheme = 'Light'">
+                <div class="radio-circle">
+                    <div class="radio-inner" *ngIf="tempTheme === 'Light'"></div>
+                </div>
+                <span>Light</span>
             </div>
-            <span>Light</span>
-        </div>
 
-        <div class="radio-option" (click)="tempTheme = 'Dark'">
-            <div class="radio-circle">
-                <div class="radio-inner" *ngIf="tempTheme === 'Dark'"></div>
+            <div class="radio-option" (click)="tempTheme = 'Dark'">
+                <div class="radio-circle">
+                    <div class="radio-inner" *ngIf="tempTheme === 'Dark'"></div>
+                </div>
+                <span>Dark</span>
             </div>
-            <span>Dark</span>
-        </div>
 
-        <div class="radio-option" (click)="tempTheme = 'System default'">
-            <div class="radio-circle">
-                <div class="radio-inner" *ngIf="tempTheme === 'System default'"></div>
+            <div class="radio-option" (click)="tempTheme = 'System default'">
+                <div class="radio-circle">
+                    <div class="radio-inner" *ngIf="tempTheme === 'System default'"></div>
+                </div>
+                <span>System default</span>
             </div>
-            <span>System default</span>
-        </div>
 
-        <div class="modal-actions">
-            <button class="cancel-text-btn" (click)="closeThemeModal()">Cancel</button>
-            <button class="ok-btn" (click)="applyTheme()">OK</button>
+            <div class="modal-actions">
+                <button class="cancel-text-btn" (click)="closeThemeModal()">Cancel</button>
+                <button class="ok-btn" (click)="applyTheme()">OK</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Wallpaper Modal -->
+    <div class="wallpaper-modal-overlay" *ngIf="showWallpaperModal" (click)="closeWallpaperModal()">
+        <div class="wallpaper-modal animate-scale-in" (click)="$event.stopPropagation()">
+            <div class="wallpaper-header">
+                <button class="back-btn" (click)="closeWallpaperModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Set chat wallpaper
+                </button>
+            </div>
+
+            <div class="preview-container">
+                <div class="mini-preview" [style.background-color]="tempWallpaper.color"
+                    [style.background-image]="tempWallpaper.image ? 'url(' + tempWallpaper.image + ')' : null"
+                    [class.has-doodles]="tempWallpaper.doodles && !tempWallpaper.image">
+                    <!-- Mock Message Bubble -->
+                    <div class="mock-bubble received">Hello there!</div>
+                    <div class="mock-bubble sent">Wallpaper preview ✨</div>
+                </div>
+            </div>
+
+            <div class="wallpaper-content">
+                <div class="doodle-option">
+                    <label class="checkbox-container">
+                        <input type="checkbox" [(ngModel)]="tempWallpaper.doodles">
+                        <span class="checkmark"></span>
+                        Add WhatsApp doodles
+                    </label>
+                </div>
+
+                <div class="wallpaper-section-title">Solid Colors</div>
+                <div class="wallpaper-grid">
+                    <!-- Hidden File Input -->
+                    <input type="file" accept="image/*" #fileInput (change)="onWallpaperFileSelected($event)"
+                        style="display: none">
+
+                    <!-- Upload Button Tile -->
+                    <div class="wallpaper-item upload-item" (click)="fileInput.click()">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="wallpaper-item" *ngFor="let color of wallpaperColors" [style.background-color]="color"
+                        [class.selected]="tempWallpaper.color === color" (click)="selectWallpaperColor(color)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="wallpaper-actions">
+                <label class="checkbox-container footer-doodle-checkbox">
+                    <input type="checkbox" [(ngModel)]="tempWallpaper.doodles">
+                    <span class="checkmark"></span>
+                    Add Doodles
+                </label>
+                <div style="flex: 1"></div> <!-- Spacer -->
+                <button class="cancel-btn" (click)="closeWallpaperModal()">Cancel</button>
+                <button class="confirm-btn" (click)="saveWallpaper()">Set Wallpaper</button>
+            </div>
         </div>
     </div>
 </div>

@@ -1,27 +1,46 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, effect } from '@angular/core';
 
-export type Theme = 'dark' | 'light' | 'midnight' | 'forest';
+export type Theme = 'dark' | 'light' | 'system' | 'midnight' | 'forest';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ThemeService {
-    currentTheme = signal<Theme>('dark');
+    currentTheme = signal<Theme>('system');
+    private mediaQuery: MediaQueryList;
 
     constructor() {
-        // Load from local storage or default to dark
+        this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        // Load from local storage or default to system
         const savedTheme = localStorage.getItem('app-theme') as Theme;
         if (savedTheme) {
             this.setTheme(savedTheme);
         } else {
-            this.setTheme('dark');
+            this.setTheme('system');
         }
+
+        // Listen for system changes
+        this.mediaQuery.addEventListener('change', (e) => {
+            if (this.currentTheme() === 'system') {
+                this.applyThemeClass(e.matches ? 'dark' : 'light');
+            }
+        });
     }
 
     setTheme(theme: Theme) {
         this.currentTheme.set(theme);
         localStorage.setItem('app-theme', theme);
 
+        if (theme === 'system') {
+            const systemDark = this.mediaQuery.matches;
+            this.applyThemeClass(systemDark ? 'dark' : 'light');
+        } else {
+            this.applyThemeClass(theme);
+        }
+    }
+
+    private applyThemeClass(theme: string) {
         // Remove old theme classes
         document.body.classList.remove('theme-dark', 'theme-light', 'theme-midnight', 'theme-forest');
 

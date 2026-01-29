@@ -96,11 +96,11 @@ npm install
 npm start
 ```
 
-Frontend will run on: `http://192.168.1.41:4200`
+Frontend will run on: `http://192.168.1.147:4200`
 
 ## Usage
 
-1. Open `http://192.168.1.41:4200` in your browser
+1. Open `http://192.168.1.147:4200` in your browser
 2. Click "Sign up" to create a new account
 3. Register another account in an incognito/different browser
 4. Login with both accounts

@@ -45,7 +45,9 @@ const userSchema = new mongoose.Schema({
     socketId: {
         type: String,
         default: ''
-    }
+    },
+    resetPasswordOtp: String,
+    resetPasswordOtpExpires: Date
 }, {
     timestamps: true
 });

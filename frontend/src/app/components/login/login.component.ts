@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -52,14 +53,15 @@ import { AuthService } from '../../services/auth.service';
               <label>Password</label>
               <div class="password-wrapper">
                 <input 
-                  type="password" 
+                  [type]="showPassword ? 'text' : 'password'" 
                   name="password" 
                   [(ngModel)]="password" 
                   placeholder="••••••••••••"
                   required
                 >
-                <i class="eye-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <i class="eye-icon" (click)="togglePassword()">
+                  <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                 </i>
               </div>
             </div>
@@ -70,10 +72,10 @@ import { AuthService } from '../../services/auth.service';
                 <span class="checkmark"></span>
                 Remember Me
               </label>
-              <a href="#" class="forgot-password">Forgot Password?</a>
+              <a routerLink="/forgot-password" class="forgot-password">Forgot Password?</a>
             </div>
 
-            <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
+            <!-- <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div> -->
 
             <button type="submit" class="btn-primary" [disabled]="loginForm.invalid || isLoading">
               <span *ngIf="!isLoading">Login</span>
@@ -417,13 +419,15 @@ import { AuthService } from '../../services/auth.service';
 export class LoginComponent {
   email = '';
   password = '';
+  showPassword = false;
   isLoading = false;
   errorMessage = '';
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private toastService: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -437,7 +441,7 @@ export class LoginComponent {
   }
 
   handleSocialLoginSuccess(token: string): void {
-    localStorage.setItem('token', token);
+    sessionStorage.setItem('token', token);
 
     this.authService.getProfile().subscribe({
       next: (user) => {
@@ -446,6 +450,7 @@ export class LoginComponent {
       error: (err) => {
         console.error('Failed to fetch user profile', err);
         // Fallback or show error, but we have token so maybe retry
+        this.toastService.error('Failed to load user profile');
         this.router.navigate(['/chat']);
       }
     });
@@ -464,6 +469,7 @@ export class LoginComponent {
       error: (error) => {
         this.isLoading = false;
         this.errorMessage = error.error?.message || 'Login failed. Please try again.';
+        this.toastService.error(this.errorMessage);
       }
     });
   }
@@ -471,5 +477,9 @@ export class LoginComponent {
   loginWith(provider: string): void {
     const backendUrl = 'http://localhost:5000/api/auth';
     window.location.href = `${backendUrl}/${provider}`;
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
   }
 }

@@ -123,6 +123,57 @@ const socketHandler = (io) => {
             }
         });
 
+        // Call Log (Missed/Ended)
+        socket.on('call-log', async (data) => {
+            console.log('SERVER: Received call-log event:', data);
+            const { to, type, duration, callType } = data; // type: 'missed' | 'ended'
+
+            if (!socket.user) {
+                console.error('SERVER: Socket user not found!');
+                return;
+            }
+
+            const senderId = socket.user._id;
+            console.log(`SERVER: Sender: ${senderId}, Receiver: ${to}, Type: ${type}`);
+
+            try {
+                let content = '';
+                if (type === 'missed') {
+                    content = `Missed ${callType || 'video'} call`;
+                } else if (type === 'ended') {
+                    content = `Call ended • ${duration || '0s'}`;
+                }
+
+                const newMessage = new Message({
+                    sender: senderId,
+                    receiver: to,
+                    messageType: 'call_log',
+                    content: content,
+                    delivered: onlineUsers.has(to),
+                    deliveredAt: onlineUsers.has(to) ? new Date() : null
+                });
+
+                await newMessage.save();
+                console.log('SERVER: Call log saved successfully:', newMessage._id);
+
+                const populatedMessage = await Message.findById(newMessage._id)
+                    .populate('sender', 'username avatar fullName')
+                    .populate('receiver', 'username avatar fullName');
+
+                // Emit to sender
+                socket.emit('message', populatedMessage);
+
+                // Emit to receiver
+                const receiverSocketId = onlineUsers.get(to);
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit('message', populatedMessage);
+                }
+
+            } catch (error) {
+                console.error('Error saving call log:', error);
+            }
+        });
+
         // Handle disconnect
         socket.on('disconnect', async () => {
             try {
@@ -166,6 +217,73 @@ const socketHandler = (io) => {
                 io.emit('user-status-change', {
                     userId,
                     isOnline: true
+                });
+            }
+        });
+
+        // --- Call Signaling Events ---
+
+        // 1. Initiate Call (Offer)
+        socket.on('call-user', (data) => {
+            const { userToCall, signalData, from, name } = data;
+            const receiverSocketId = onlineUsers.get(userToCall);
+
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit('call-made', {
+                    signal: signalData,
+                    from,
+                    name
+                });
+            } else {
+                // Notify caller that user is offline/unavailable
+                socket.emit('call-failed', { reason: 'User is offline' });
+            }
+        });
+
+        // 2. Answer Call
+        socket.on('make-answer', (data) => {
+            const { to, signal } = data;
+            const callerSocketId = onlineUsers.get(to);
+
+            if (callerSocketId) {
+                io.to(callerSocketId).emit('answer-made', {
+                    signal: signal,
+                    from: socket.userId // Optional: verify sender
+                });
+            }
+        });
+
+        // 3. ICE Candidates
+        socket.on('ice-candidate', (data) => {
+            const { to, candidate } = data;
+            const peerSocketId = onlineUsers.get(to);
+
+            if (peerSocketId) {
+                io.to(peerSocketId).emit('ice-candidate-received', {
+                    candidate,
+                    from: socket.userId
+                });
+            }
+        });
+
+        // 4. Reject Call
+        socket.on('reject-call', (data) => {
+            const { to } = data;
+            const callerSocketId = onlineUsers.get(to);
+            if (callerSocketId) {
+                io.to(callerSocketId).emit('call-rejected', {
+                    from: socket.userId
+                });
+            }
+        });
+
+        // 5. End Call
+        socket.on('end-call', (data) => {
+            const { to } = data;
+            const peerSocketId = onlineUsers.get(to);
+            if (peerSocketId) {
+                io.to(peerSocketId).emit('call-ended', {
+                    from: socket.userId
                 });
             }
         });

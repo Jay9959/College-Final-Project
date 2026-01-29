@@ -17,14 +17,14 @@ export class AuthService {
     }
 
     private loadUserFromStorage(): void {
-        const userJson = localStorage.getItem('user');
+        const userJson = sessionStorage.getItem('user');
         if (userJson) {
             try {
                 const user = JSON.parse(userJson);
                 this.currentUserSubject.next(user);
             } catch {
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('token');
             }
         }
     }
@@ -57,8 +57,8 @@ export class AuthService {
             isOnline: response.isOnline,
             token: response.token
         };
-        localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('token', response.token);
+        sessionStorage.setItem('user', JSON.stringify(user));
+        sessionStorage.setItem('token', response.token);
         this.currentUserSubject.next(user);
         this.currentUserSubject.next(user);
     }
@@ -73,7 +73,7 @@ export class AuthService {
                     const currentUser = this.currentUserSubject.value;
                     if (currentUser) {
                         const updatedUser = { ...currentUser, avatar: response.avatar };
-                        localStorage.setItem('user', JSON.stringify(updatedUser)); // Update local storage
+                        sessionStorage.setItem('user', JSON.stringify(updatedUser)); // Update local storage
                         this.currentUserSubject.next(updatedUser); // Update observable
                     }
                 })
@@ -86,19 +86,19 @@ export class AuthService {
             userId: user?._id
         }).pipe(
             tap(() => {
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                sessionStorage.removeItem('token');
                 this.currentUserSubject.next(null);
             })
         );
     }
 
     isLoggedIn(): boolean {
-        return !!localStorage.getItem('token');
+        return !!sessionStorage.getItem('token');
     }
 
     getToken(): string | null {
-        return localStorage.getItem('token');
+        return sessionStorage.getItem('token');
     }
 
     getCurrentUser(): User | null {
@@ -109,5 +109,16 @@ export class AuthService {
         return this.http.get<AuthResponse>(`${this.apiUrl}/auth/me`).pipe(
             tap(response => this.handleAuthResponse(response))
         );
+    }
+    forgotPassword(email: string): Observable<any> {
+        return this.http.post(`${this.apiUrl}/auth/forgot-password`, { email });
+    }
+
+    verifyOtp(email: string, otp: string): Observable<any> {
+        return this.http.post(`${this.apiUrl}/auth/verify-otp`, { email, otp });
+    }
+
+    resetPassword(email: string, otp: string, password: string): Observable<any> {
+        return this.http.post(`${this.apiUrl}/auth/reset-password`, { email, otp, password });
     }
 }

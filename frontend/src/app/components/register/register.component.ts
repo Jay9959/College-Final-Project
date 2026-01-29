@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -90,7 +91,7 @@ import { AuthService } from '../../services/auth.service';
               </div>
             </div>
 
-            <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
+            <!-- <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div> -->
             <div class="error-msg" *ngIf="confirmPassword && password !== confirmPassword">Passwords do not match</div>
 
             <button type="submit" class="btn-primary" [disabled]="registerForm.invalid || password !== confirmPassword || isLoading">
@@ -255,7 +256,7 @@ import { AuthService } from '../../services/auth.service';
 
     /* Inputs */
     .form-group {
-      margin-bottom: 15px; /* Slightly Reduced for fitting more fields */
+      margin-bottom: 20px;
     }
 
     .form-group label {
@@ -397,7 +398,8 @@ export class RegisterComponent {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private toastService: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -423,12 +425,15 @@ export class RegisterComponent {
   }
 
   handleSocialLoginSuccess(token: string): void {
-    localStorage.setItem('token', token);
+    sessionStorage.setItem('token', token);
     this.authService.getProfile().subscribe({
       next: () => {
         this.router.navigate(['/chat']);
       },
-      error: () => this.router.navigate(['/chat'])
+      error: () => {
+        this.toastService.error('Failed to load user profile');
+        this.router.navigate(['/chat']);
+      }
     });
   }
 
@@ -460,6 +465,7 @@ export class RegisterComponent {
       error: (error) => {
         this.isLoading = false;
         this.errorMessage = error.error?.message || 'Registration failed. Please try again.';
+        this.toastService.error(this.errorMessage);
       }
     });
   }

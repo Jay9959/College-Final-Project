@@ -22,7 +22,7 @@ const io = new Server(server, {
     cors: {
         origin: [
             'http://localhost:4200',
-            'http://127.0.0.1:4200',
+            'http://192.168.43.95:4200',
             'http://192.168.1.147:4200',
             process.env.CLIENT_URL // Add your Vercel URL here via environment variable
         ],
@@ -38,7 +38,7 @@ connectDB();
 app.use(cors({
     origin: [
         'http://localhost:4200',
-        'http://127.0.0.1:4200',
+        'http://192.168.43.95:4200',
         'http://192.168.1.147:4200',
         process.env.CLIENT_URL
     ],

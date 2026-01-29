@@ -1,0 +1,35 @@
+<div class="forgot-container">
+    <div class="bg-image"></div>
+    <div class="overlay"></div>
+
+    <div class="content-wrapper">
+        <div class="auth-card animate-fade-in">
+            <div class="header">
+                <h2>Verify OTP</h2>
+                <p>Enter the code sent to {{ email }}</p>
+            </div>
+
+            <form (ngSubmit)="onSubmit()" class="auth-form">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input type="text" [(ngModel)]="otp" name="otp" class="otp-input" placeholder="------"
+                            maxlength="6" required>
+                    </div>
+                </div>
+
+                <!-- Messages handled by Toast Service -->
+
+                <div class="actions">
+                    <button type="submit" [disabled]="loading" class="btn-primary">
+                        <span *ngIf="!loading">Verify Code</span>
+                        <span *ngIf="loading" class="loader"></span>
+                    </button>
+
+                    <a routerLink="/forgot-password" class="back-link">
+                        <i class="fas fa-arrow-left"></i> Wrong Email?
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

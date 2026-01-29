@@ -108,6 +108,72 @@ export class SocketService {
         });
     }
 
+    // --- Call Signaling Methods ---
+
+    callUser(data: { userToCall: string; signalData: any; from: string; name: string; callType: 'video' | 'audio' }): void {
+        this.socket?.emit('call-user', data);
+    }
+
+    onCallMade(): Observable<{ signal: any; from: string; name: string; callType: 'video' | 'audio' }> {
+        return new Observable(observer => {
+            this.socket?.on('call-made', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+
+    answerCall(data: { signal: any; to: string }): void {
+        this.socket?.emit('make-answer', data);
+    }
+
+    onAnswerMade(): Observable<{ signal: any; from: string }> {
+        return new Observable(observer => {
+            this.socket?.on('answer-made', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+
+    sendIceCandidate(data: { target: string; candidate: any }): void {
+        this.socket?.emit('ice-candidate', { to: data.target, candidate: data.candidate });
+    }
+
+    onIceCandidate(): Observable<{ candidate: any; from: string }> {
+        return new Observable(observer => {
+            this.socket?.on('ice-candidate-received', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+
+    rejectCall(data: { to: string }): void {
+        this.socket?.emit('reject-call', data);
+    }
+
+    onCallRejected(): Observable<{ from: string }> {
+        return new Observable(observer => {
+            this.socket?.on('call-rejected', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+
+    endCall(data: { to: string }): void {
+        this.socket?.emit('end-call', data);
+    }
+
+    onCallEnded(): Observable<void> {
+        return new Observable(observer => {
+            this.socket?.on('call-ended', () => {
+                observer.next();
+            });
+        });
+    }
+
+    emitCallLog(data: { to: string; type: 'missed' | 'ended'; duration?: string; callType: 'video' | 'audio' }): void {
+        this.socket?.emit('call-log', data);
+    }
+
     isUserOnline(userId: string): boolean {
         return this.onlineUsersSubject.value.includes(userId);
     }

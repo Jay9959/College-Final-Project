@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const { generateToken, protect } = require('../middleware/auth');
 const passport = require('passport');
+const sendEmail = require('../utils/sendEmail');
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -194,6 +195,117 @@ router.get('/me', protect, async (req, res) => {
         });
     } catch (error) {
         console.error('Get Me error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/auth/forgot-password
+// @desc    Send OTP for password reset
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Please provide an email address' });
+        }
+
+        const user = await User.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'This email is not registered. Please sign up first.' });
+        }
+
+        // Generate 6 digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Hash OTP before saving (optional but recommended, for now storing plain for simplicity as per request)
+        // Storing plain OTP for now to keep it simple as requested, but ideally should be hashed
+        user.resetPasswordOtp = otp;
+        user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+        await user.save();
+
+        const message = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #4a90e2;">Reset Password OTP</h2>
+                <p>You requested a password reset. Here is your OTP code:</p>
+                <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
+                <p>This OTP is valid for 10 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            </div>
+        `;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Password Reset OTP',
+                html: message
+            });
+
+            res.status(200).json({ message: 'OTP sent to email' });
+        } catch (err) {
+            user.resetPasswordOtp = undefined;
+            user.resetPasswordOtpExpires = undefined;
+            await user.save();
+            console.error('Email send error:', err);
+            return res.status(500).json({ message: 'Email could not be sent' });
+        }
+    } catch (error) {
+        console.error('Forgot Password error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/auth/verify-otp
+// @desc    Verify OTP
+// @access  Public
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const user = await User.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') },
+            resetPasswordOtp: otp,
+            resetPasswordOtpExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        res.status(200).json({ message: 'OTP Verified', email });
+    } catch (error) {
+        console.error('Verify OTP error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset Password
+// @access  Public
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email, otp, password } = req.body;
+        const user = await User.findOne({
+            email: { $regex: new RegExp(`^${email}$`, 'i') },
+            resetPasswordOtp: otp,
+            resetPasswordOtpExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        user.password = password; // Will be hashed by pre-save hook
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordOtpExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Password reset successful' });
+    } catch (error) {
+        console.error('Reset Password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

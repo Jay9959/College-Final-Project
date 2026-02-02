@@ -128,12 +128,12 @@ const socketHandler = (io) => {
             console.log('SERVER: Received call-log event:', data);
             const { to, type, duration, callType } = data; // type: 'missed' | 'ended'
 
-            if (!socket.user) {
-                console.error('SERVER: Socket user not found!');
+            if (!socket.userId) {
+                console.error('SERVER: Socket userId not found!');
                 return;
             }
 
-            const senderId = socket.user._id;
+            const senderId = socket.userId;
             console.log(`SERVER: Sender: ${senderId}, Receiver: ${to}, Type: ${type}`);
 
             try {
@@ -167,6 +167,9 @@ const socketHandler = (io) => {
                 const receiverSocketId = onlineUsers.get(to);
                 if (receiverSocketId) {
                     io.to(receiverSocketId).emit('message', populatedMessage);
+                    console.log('SERVER: Call log sent to receiver');
+                } else {
+                    console.log('SERVER: Receiver is not online');
                 }
 
             } catch (error) {

@@ -134,16 +134,20 @@ export class CallModalComponent implements OnInit, OnDestroy {
         this.startTime = Date.now();
 
         await this.setupMedia();
-        this.createPeerConnection(this.callerId);
 
-        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.callerSignal));
-        const answer = await this.peerConnection.createAnswer();
-        await this.peerConnection.setLocalDescription(answer);
+        // Small delay to ensure DOM is ready
+        setTimeout(async () => {
+            this.createPeerConnection(this.callerId);
 
-        this.socketService.answerCall({
-            signal: answer,
-            to: this.callerId
-        });
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(this.callerSignal));
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
+
+            this.socketService.answerCall({
+                signal: answer,
+                to: this.callerId
+            });
+        }, 100);
     }
 
     declineCall() {
@@ -196,14 +200,24 @@ export class CallModalComponent implements OnInit, OnDestroy {
                 audio: true,
                 video: this.callType === 'video'
             };
+            console.log('Requesting media with constraints:', constraints);
             this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log('Media stream obtained:', this.localStream.getTracks());
 
             if (this.localVideo && this.callType === 'video') {
+                console.log('Setting local video srcObject');
                 this.localVideo.nativeElement.srcObject = this.localStream;
+                // Explicitly play the video to ensure it displays
+                try {
+                    await this.localVideo.nativeElement.play();
+                    console.log('Local video playing');
+                } catch (playErr) {
+                    console.error('Error playing local video:', playErr);
+                }
             }
         } catch (err) {
             console.error('Error accessing media devices:', err);
-            // alert('Could not access camera/microphone');
+            alert('Could not access camera/microphone. Please check permissions.');
         }
     }
 
@@ -217,9 +231,23 @@ export class CallModalComponent implements OnInit, OnDestroy {
 
         // Handle incoming tracks
         this.peerConnection.ontrack = (event) => {
-            this.remoteStream = event.streams[0];
-            if (this.remoteVideo) {
-                this.remoteVideo.nativeElement.srcObject = this.remoteStream;
+            console.log('Received remote track:', event.track.kind);
+
+            // Only set srcObject if not already set to prevent interrupting playback
+            if (!this.remoteStream) {
+                this.remoteStream = event.streams[0];
+
+                if (this.remoteVideo) {
+                    console.log('Setting remote video srcObject');
+                    this.remoteVideo.nativeElement.srcObject = this.remoteStream;
+
+                    // Explicitly play the remote video
+                    this.remoteVideo.nativeElement.play().catch((err: any) => {
+                        console.error('Error playing remote video:', err);
+                    });
+                }
+            } else {
+                console.log('Remote stream already set, track will be added automatically');
             }
         };
 

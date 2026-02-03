@@ -1,13 +1,7 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist/chat-frontend" }
-    }
-  ],
+  "buildCommand": "echo \"skip build\"",
+  "outputDirectory": "dist/chat-frontend",
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html", "status": 200 }
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

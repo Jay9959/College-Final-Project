@@ -1,32 +1,23 @@
 {
-    "name": "chat-frontend",
-    "version": "1.0.0",
-    "scripts": {
-        "start": "ng serve --host 0.0.0.0",
-        "build": "ng build --configuration production",
-        "watch": "ng build --watch --configuration development",
-        "serve": "serve -s dist/chat-frontend"
-    },
-    "private": true,
-    "dependencies": {
-        "@angular/animations": "^18.0.0",
-        "@angular/common": "^18.0.0",
-        "@angular/compiler": "^18.0.0",
-        "@angular/core": "^18.0.0",
-        "@angular/forms": "^18.0.0",
-        "@angular/platform-browser": "^18.0.0",
-        "@angular/platform-browser-dynamic": "^18.0.0",
-        "@angular/router": "^18.0.0",
-        "rxjs": "~7.8.0",
-        "socket.io-client": "^4.6.1",
-        "tslib": "^2.3.0",
-        "zone.js": "~0.14.0"
-    },
-    "devDependencies": {
-        "@angular-devkit/build-angular": "^18.0.0",
-        "@angular/cli": "^18.2.21",
-        "@angular/compiler-cli": "^18.0.0",
-        "serve": "^14.2.5",
-        "typescript": "~5.4.0"
-    }
+  "name": "chat-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve",
+    "build": "node --max_old_space_size=8192 ./node_modules/@angular/cli/bin/ng build --configuration production"
+  },
+  "dependencies": {
+    "@angular/animations": "^18.0.0",
+    "@angular/common": "^18.0.0",
+    "@angular/compiler": "^18.0.0",
+    "@angular/core": "^18.0.0",
+    "@angular/forms": "^18.0.0",
+    "@angular/platform-browser": "^18.0.0",
+    "@angular/platform-browser-dynamic": "^18.0.0",
+    "@angular/router": "^18.0.0",
+    "rxjs": "~7.8.0",
+    "socket.io-client": "^4.6.1",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.14.0"
+  }
 }

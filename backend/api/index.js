@@ -4,9 +4,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const messageRoutes = require('./routes/messageRoutes');
+const authRoutes = require('../routes/auth');
+const userRoutes = require('../routes/users');
+const messageRoutes = require('../routes/messages');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,46 +21,46 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 
 // --- MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('MongoDB error:', err));
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB error:', err));
 
 // --- Socket.IO
 const io = new Server(server, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-    }
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
 });
 
 // --- Online users
 let onlineUsers = new Map();
 
 io.on('connection', (socket) => {
-    console.log('New socket connected:', socket.id);
+  console.log('New socket connected:', socket.id);
 
-    socket.on('join-user', (userId) => {
-        onlineUsers.set(userId, socket.id);
-        io.emit('online-users', Array.from(onlineUsers.keys()));
-    });
+  socket.on('join-user', (userId) => {
+    onlineUsers.set(userId, socket.id);
+    io.emit('online-users', Array.from(onlineUsers.keys()));
+  });
 
-    socket.on('send-message', (data) => {
-        const recipientSocket = onlineUsers.get(data.to);
-        if (recipientSocket) {
-            io.to(recipientSocket).emit('receive-message', data);
-            socket.emit('message-sent', data);
-        }
-    });
+  socket.on('send-message', (data) => {
+    const recipientSocket = onlineUsers.get(data.to);
+    if (recipientSocket) {
+      io.to(recipientSocket).emit('receive-message', data);
+      socket.emit('message-sent', data);
+    }
+  });
 
-    socket.on('disconnect', () => {
-        for (const [userId, id] of onlineUsers.entries()) {
-            if (id === socket.id) {
-                onlineUsers.delete(userId);
-            }
-        }
-        io.emit('online-users', Array.from(onlineUsers.keys()));
-        console.log('Socket disconnected:', socket.id);
-    });
+  socket.on('disconnect', () => {
+    for (const [userId, id] of onlineUsers.entries()) {
+      if (id === socket.id) {
+        onlineUsers.delete(userId);
+      }
+    }
+    io.emit('online-users', Array.from(onlineUsers.keys()));
+    console.log('Socket disconnected:', socket.id);
+  });
 });
 
 // --- Start server

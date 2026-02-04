@@ -2,10 +2,9 @@
   "name": "chat-backend",
   "version": "1.0.0",
   "description": "Real-time chat application backend with Socket.IO",
-  "main": "server.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js",
-    "dev": "nodemon server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -21,8 +20,5 @@
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
     "socket.io": "^4.6.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
   }
 }

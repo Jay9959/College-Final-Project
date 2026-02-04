@@ -11,460 +11,483 @@ import { ToastService } from '../../services/toast.service';
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="auth-container">
-      <div class="auth-card">
-        <!-- Toggle Header -->
-        <div class="auth-toggle">
-          <button class="toggle-btn" routerLink="/login">Sign in</button>
-          <button class="toggle-btn active">Sign up</button>
+      <!-- Animated Background Elements -->
+      <div class="glow-orb orb-1"></div>
+      <div class="glow-orb orb-2"></div>
+
+      <div class="auth-wrapper glass-panel">
+        
+        <!-- Left Side: Visual/Welcome -->
+        <div class="auth-visual">
+          <div class="visual-content">
+            <div class="logo-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="app-logo">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <h2>Join the <br><span class="text-gradient">Future of Chat</span></h2>
+            <p>Connect with friends and colleagues in a secure, futuristic environment.</p>
+          </div>
+          <!-- Decorative shapes -->
+          <div class="shape-diamond"></div>
+          <div class="shape-circle"></div>
         </div>
 
-        <!-- Header -->
-        <div class="auth-header">
-          <h1>Create <span class="highlight">Account</span></h1>
-          <p>Sign up to get started</p>
-        </div>
-
-        <!-- Form -->
-        <form (ngSubmit)="onRegister()" #registerForm="ngForm">
-          <!-- Username Input -->
-          <div class="form-group">
-            <label>Username</label>
-            <input 
-              type="text" 
-              name="username" 
-              [(ngModel)]="username" 
-              placeholder="Enter your username"
-              required
-              minlength="3"
-              #usernameInput="ngModel"
-            >
+        <!-- Right Side: Form -->
+        <div class="auth-form-side">
+          <div class="form-header">
+            <h3>Create Account</h3>
+            <p>Already a member? <a routerLink="/login" class="link-animate">Log In</a></p>
           </div>
 
-          <!-- Email Input -->
-          <div class="form-group">
-            <label>Email Address</label>
-            <input 
-              type="email" 
-              name="email" 
-              [(ngModel)]="email" 
-              placeholder="Enter your email"
-              required
-              email
-              #emailInput="ngModel"
-            >
-          </div>
+          <form (ngSubmit)="onRegister()" #registerForm="ngForm">
+            <!-- Username Input -->
+            <div class="floating-input-group">
+              <input 
+                type="text" 
+                id="username" 
+                name="username"
+                [(ngModel)]="username" 
+                required 
+                minlength="3"
+                placeholder=" "
+              >
+              <label for="username">Username</label>
+              <div class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </div>
+            </div>
 
-          <!-- Password Input -->
-          <div class="form-group">
-            <label>Password</label>
-            <div class="password-wrapper">
+            <!-- Email Input -->
+            <div class="floating-input-group">
+              <input 
+                type="email" 
+                id="email" 
+                name="email"
+                [(ngModel)]="email" 
+                required 
+                email
+                placeholder=" "
+              >
+              <label for="email">Email Address</label>
+              <div class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+            </div>
+
+            <!-- Password Input -->
+            <div class="floating-input-group">
               <input 
                 [type]="showPassword ? 'text' : 'password'" 
-                name="password" 
+                id="password" 
+                name="password"
                 [(ngModel)]="password" 
-                placeholder="Enter your password"
-                required
+                required 
                 minlength="6"
+                placeholder=" "
               >
-              <button type="button" class="eye-btn" (click)="togglePassword()">
-                <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              <label for="password">Password</label>
+              <button type="button" class="eye-toggle" (click)="togglePassword()">
+                <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
               </button>
             </div>
-          </div>
 
-          <!-- Confirm Password Input -->
-          <div class="form-group">
-            <label>Confirm Password</label>
-            <div class="password-wrapper">
+            <!-- Confirm Password -->
+            <div class="floating-input-group">
               <input 
                 [type]="showConfirmPassword ? 'text' : 'password'" 
-                name="confirmPassword" 
+                id="confirmPassword" 
+                name="confirmPassword"
                 [(ngModel)]="confirmPassword" 
-                placeholder="Confirm your password"
-                required
+                required 
+                placeholder=" "
               >
-              <button type="button" class="eye-btn" (click)="toggleConfirmPassword()">
-                <svg *ngIf="!showConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                <svg *ngIf="showConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              <label for="confirmPassword">Confirm Password</label>
+            </div>
+
+            <div class="error-msg" *ngIf="confirmPassword && password !== confirmPassword">
+              Passwords do not match
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="registerForm.invalid || password !== confirmPassword || isLoading">
+              <span *ngIf="!isLoading">Create Account</span>
+              <span *ngIf="isLoading" class="loader"></span>
+            </button>
+
+            <!-- Divider -->
+            <div class="divider">
+              <span>Or Register With</span>
+            </div>
+
+            <!-- Social Media -->
+            <div class="social-row">
+              <button type="button" class="btn-social" (click)="loginWith('google')">
+                <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)"><path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/><path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/><path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.489 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.989 -25.464 56.619 L -21.484 53.529 Z"/><path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.424 44.599 -10.174 45.789 L -6.704 42.319 C -8.804 40.359 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/></g></svg>
+                Google
+              </button>
+              <button type="button" class="btn-social" (click)="loginWith('github')">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                GitHub
               </button>
             </div>
-          </div>
-
-          <!-- Error Message -->
-          <div class="error-msg" *ngIf="confirmPassword && password !== confirmPassword">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            Passwords do not match
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" class="btn-submit" [disabled]="registerForm.invalid || password !== confirmPassword || isLoading">
-            <span *ngIf="!isLoading">Sign Up</span>
-            <span *ngIf="isLoading" class="loader"></span>
-          </button>
-
-          <!-- Divider -->
-          <div class="divider">
-            <span>OR SIGN UP WITH</span>
-          </div>
-
-          <!-- Social Login -->
-          <div class="social-btns">
-            <button type="button" class="social-btn" (click)="loginWith('google')">
-              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-              <span>Google</span>
-            </button>
-            <button type="button" class="social-btn" (click)="loginWith('github')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-              <span>GitHub</span>
-            </button>
-          </div>
-
-          <!-- Footer -->
-          <div class="auth-footer">
-            <p>Already have an account? <a routerLink="/login">Sign In</a></p>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   `,
   styles: [`
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
     :host {
       display: block;
-      min-height: 100vh;
-      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      overflow: hidden;
     }
-
+    
     .auth-container {
-      min-height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-      padding: 40px 20px;
+      padding: 20px;
+      position: relative;
+    }
+
+    /* Glow Orbs */
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.6;
+      z-index: 0;
+      animation: float 10s ease-in-out infinite;
+    }
+    
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--primary-dark);
+      top: -100px;
+      left: -100px;
+    }
+    
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent-dark);
+      bottom: -50px;
+      right: -50px;
+      animation-delay: 2s;
+    }
+
+    /* Wrapper */
+    .auth-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1000px;
+      display: flex;
+      min-height: 600px;
+      overflow: hidden;
+    }
+
+    /* Visual Side (Left) */
+    .auth-visual {
+      flex: 1;
+      background: rgba(0,0,0,0.2);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       position: relative;
       overflow: hidden;
     }
 
-    .auth-container::before {
-      content: '';
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent);
-      top: -200px;
-      right: -200px;
-      border-radius: 50%;
-      animation: pulse 8s ease-in-out infinite;
-    }
-
-    .auth-container::after {
-      content: '';
-      position: absolute;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(236, 72, 153, 0.15), transparent);
-      bottom: -150px;
-      left: -150px;
-      border-radius: 50%;
-      animation: pulse 8s ease-in-out infinite 4s;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-    }
-
-    .auth-card {
-      width: 100%;
-      max-width: 440px;
-      background: rgba(17, 24, 39, 0.8);
-      backdrop-filter: blur(20px);
-      border-radius: 24px;
-      padding: 48px 40px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+    .visual-content {
       position: relative;
-      z-index: 1;
-      animation: slideUp 0.5s ease-out;
+      z-index: 2;
     }
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Toggle */
-    .auth-toggle {
+    .logo-wrapper {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
       display: flex;
-      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+      color: var(--primary);
+    }
+    
+    .logo-wrapper svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .auth-visual h2 {
+      font-size: 3rem;
+      line-height: 1.1;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-family: var(--font-display);
+    }
+
+    .auth-visual p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    /* Decorative Shapes */
+    .shape-diamond {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border: 2px solid rgba(255,255,255,0.05);
+      transform: rotate(45deg);
+      top: 10%;
+      right: -50px;
+    }
+
+    .shape-circle {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border: 2px solid rgba(255,255,255,0.03);
+      border-radius: 50%;
+      bottom: -100px;
+      left: 20px;
+    }
+
+    /* Form Side (Right) */
+    .auth-form-side {
+      flex: 1;
+      padding: 60px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.4); /* slightly darker */
+    }
+
+    .form-header {
       margin-bottom: 40px;
     }
 
-    .toggle-btn {
-      background: none;
-      border: none;
-      color: #6b7280;
-      font-size: 16px;
-      font-weight: 500;
-      padding: 8px 0;
-      cursor: pointer;
-      position: relative;
-      transition: color 0.3s;
-    }
-
-    .toggle-btn:hover {
-      color: #9ca3af;
-    }
-
-    .toggle-btn.active {
-      color: #a78bfa;
-    }
-
-    .toggle-btn.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-      border-radius: 2px;
-    }
-
-    /* Header */
-    .auth-header {
-      margin-bottom: 32px;
-    }
-
-    .auth-header h1 {
-      font-size: 32px;
-      font-weight: 700;
-      color: #f9fafb;
-      margin: 0 0 8px 0;
-      letter-spacing: -0.5px;
-    }
-
-    .auth-header .highlight {
-      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .auth-header p {
-      color: #9ca3af;
-      font-size: 14px;
-      margin: 0;
-    }
-
-    /* Form */
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      display: block;
-      color: #d1d5db;
-      font-size: 13px;
-      font-weight: 500;
+    .form-header h3 {
+      font-size: 2rem;
       margin-bottom: 8px;
     }
 
-    .form-group input {
-      width: 100%;
-      background: rgba(31, 41, 55, 0.5);
-      border: 2px solid #374151;
-      border-radius: 12px;
-      padding: 14px 16px;
-      color: #f9fafb;
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      transition: all 0.3s;
-      outline: none;
+    .form-header p {
+      color: var(--text-muted);
     }
 
-    .form-group input:focus {
-      border-color: #14b8a6;
-      background: rgba(31, 41, 55, 0.8);
-      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
-    }
-
-    .form-group input::placeholder {
-      color: #6b7280;
-    }
-
-    .password-wrapper {
+    .link-animate {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
       position: relative;
     }
-
-    .eye-btn {
+    
+    .link-animate::after {
+      content: '';
       position: absolute;
-      right: 12px;
+      width: 0%;
+      height: 2px;
+      bottom: -2px;
+      left: 0;
+      background-color: var(--primary);
+      transition: width 0.3s;
+    }
+    
+    .link-animate:hover::after {
+      width: 100%;
+    }
+
+    /* Floating Input */
+    .floating-input-group {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .floating-input-group input {
+      width: 100%;
+      background: #1e293b; /* Fallback */
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px 16px 16px 45px; /* space for icon */
+      font-size: 1rem;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .floating-input-group label {
+      position: absolute;
+      left: 45px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      transition: all 0.3s;
+      font-size: 0.95rem;
+    }
+
+    /* Float label on focus or content */
+    .floating-input-group input:focus,
+    .floating-input-group input:not(:placeholder-shown) {
+      border-color: var(--primary);
+      background: rgba(30, 41, 59, 0.8);
+      box-shadow: 0 0 0 4px rgba(0, 242, 254, 0.1);
+    }
+
+    .floating-input-group input:focus + label,
+    .floating-input-group input:not(:placeholder-shown) + label {
+      top: 0;
+      left: 14px;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      background: var(--bg-surface);
+      padding: 0 6px;
+      color: var(--primary);
+      border-radius: 4px;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .floating-input-group input:focus ~ .input-icon {
+      color: var(--primary);
+    }
+
+    .eye-toggle {
+      position: absolute;
+      right: 14px;
       top: 50%;
       transform: translateY(-50%);
       background: none;
       border: none;
-      color: #6b7280;
+      color: var(--text-muted);
       cursor: pointer;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       transition: color 0.3s;
     }
 
-    .eye-btn:hover {
-      color: #9ca3af;
+    .eye-toggle:hover {
+      color: var(--text-main);
     }
 
-    /* Error Message */
-    .error-msg {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #ef4444;
-      font-size: 13px;
-      margin-bottom: 16px;
-      padding: 10px 14px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      border-radius: 8px;
-    }
-
-    /* Submit Button */
-    .btn-submit {
+    /* Buttons */
+    .btn-primary {
       width: 100%;
-      background: linear-gradient(90deg, #8b5cf6, #ec4899);
+      padding: 16px;
+      background: var(--grad-primary);
       border: none;
       border-radius: 12px;
-      padding: 16px;
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
+      color: #000;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-neon);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      filter: grayscale(1);
+    }
+
+    .divider {
+      margin: 30px 0;
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+    
+    .divider span {
+      padding: 0 10px;
+    }
+
+    .social-row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .btn-social {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      color: var(--text-main);
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.3s;
-      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
-      margin-top: 8px;
     }
 
-    .btn-submit:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+    .btn-social:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-glow);
     }
 
-    .btn-submit:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    .btn-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .error-msg {
+      color: var(--accent-dark);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      padding-left: 5px;
     }
 
     .loader {
       display: inline-block;
       width: 20px;
       height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: black;
       border-radius: 50%;
-      animation: spin 0.6s linear infinite;
+      animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Divider */
-    .divider {
-      margin: 28px 0;
-      text-align: center;
-      position: relative;
-    }
-
-    .divider::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .divider span {
-      background: rgba(17, 24, 39, 0.9);
-      padding: 0 16px;
-      color: #6b7280;
-      font-size: 12px;
-      font-weight: 500;
-      position: relative;
-      letter-spacing: 0.5px;
-    }
-
-    /* Social Buttons */
-    .social-btns {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
-
-    .social-btn {
-      flex: 1;
-      background: rgba(31, 41, 55, 0.5);
-      border: 1px solid #374151;
-      border-radius: 12px;
-      padding: 14px;
-      color: #d1d5db;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.3s;
-    }
-
-    .social-btn:hover {
-      background: rgba(31, 41, 55, 0.8);
-      border-color: #4b5563;
-      transform: translateY(-2px);
-    }
-
-    /* Footer */
-    .auth-footer {
-      text-align: center;
-    }
-
-    .auth-footer p {
-      color: #9ca3af;
-      font-size: 14px;
-      margin: 0;
-    }
-
-    .auth-footer a {
-      color: #a78bfa;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.3s;
-    }
-
-    .auth-footer a:hover {
-      color: #8b5cf6;
-    }
-
-    /* Responsive */
-    @media (max-width: 640px) {
-      .auth-card {
-        padding: 36px 28px;
+    /* Mobile */
+    @media (max-width: 768px) {
+      .auth-wrapper {
+        flex-direction: column;
+        max-width: 450px;
       }
-
-      .auth-header h1 {
-        font-size: 28px;
+      
+      .auth-visual {
+        display: none; /* Hide visual on mobile to save space */
+      }
+      
+      .auth-form-side {
+        padding: 40px 30px;
       }
     }
   `]

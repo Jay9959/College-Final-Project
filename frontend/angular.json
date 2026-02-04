@@ -16,10 +16,17 @@
             "outputPath": "dist/chat-frontend",
             "index": "src/index.html",
             "main": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
-            "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/styles.css"],
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
             "scripts": [],
             "baseHref": "/"
           },
@@ -60,6 +67,9 @@
     }
   },
   "cli": {
-    "analytics": "2ac8fcce-0df1-4347-98fb-8071f993d4c9"
+    "analytics": "2ac8fcce-0df1-4347-98fb-8071f993d4c9",
+    "cache": {
+      "enabled": false
+    }
   }
 }

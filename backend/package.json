@@ -4,7 +4,8 @@
   "description": "Real-time chat application backend with Socket.IO",
   "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -15,10 +16,9 @@
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
-    "passport": "^0.7.0",
-    "passport-apple": "^2.0.2",
-    "passport-github2": "^0.1.12",
-    "passport-google-oauth20": "^2.0.0",
     "socket.io": "^4.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }

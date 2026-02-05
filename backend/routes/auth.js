@@ -107,7 +107,7 @@ const handleMockLogin = async (res, provider) => {
         }
 
         const token = generateToken(user._id);
-        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:4200';
+        const frontendUrl = process.env.CLIENT_URL || 'https://college-final-project-1.onrender.com';
         return res.redirect(`${frontendUrl}/login?token=${token}`);
     } catch (error) {
         console.error('Mock login error:', error);
@@ -128,7 +128,7 @@ router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/login', session: false }),
     (req, res) => {
         const token = generateToken(req.user._id);
-        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:4200';
+        const frontendUrl = process.env.CLIENT_URL || 'http://https://college-final-project-1.onrender.com';
         res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 );
@@ -146,7 +146,7 @@ router.get('/github/callback',
     passport.authenticate('github', { failureRedirect: '/login', session: false }),
     (req, res) => {
         const token = generateToken(req.user._id);
-        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:4200';
+        const frontendUrl = process.env.CLIENT_URL || 'http://https://college-final-project-1.onrender.com';
         res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 );

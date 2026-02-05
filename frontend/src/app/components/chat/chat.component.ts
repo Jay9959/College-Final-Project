@@ -644,7 +644,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                     '⚠️ Browser Security Block:\n\n' +
                     'Microphone is blocked because you are using an IP address (' + window.location.hostname + ') without HTTPS.\n\n' +
                     'SOLUTIONS:\n' +
-                    '1. Use "http://localhost:4200" instead (if on this PC).\n' +
+                    '1. Use "http://https://college-final-project-1.onrender.com" instead (if on this PC).\n' +
                     '2. OR go to "chrome://flags" -> Enable "Insecure origins treated as secure"\n' +
                     '   and add: ' + window.location.origin
                 );

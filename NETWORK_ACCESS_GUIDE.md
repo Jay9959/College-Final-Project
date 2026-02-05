@@ -29,7 +29,7 @@
    ```
 
 3. **Access Locally:**
-   - Frontend: `http://localhost:4200`
+   - Frontend: `http://https://college-final-project-1.onrender.com`
    - Backend: `http://localhost:5000`
 
 ### On Another Laptop (Same WiFi):

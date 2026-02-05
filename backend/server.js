@@ -21,7 +21,7 @@
 // const io = new Server(server, {
 //     cors: {
 //         origin: [
-//             'http://localhost:4200',
+//             'http://https://college-final-project-1.onrender.com',
 //             'http://192.168.43.95:4200',
 //             'http://192.168.1.147:4200',
 //             process.env.CLIENT_URL // Add your Vercel URL here via environment variable
@@ -37,7 +37,7 @@
 // // Middleware
 // app.use(cors({
 //     origin: [
-//         'http://localhost:4200',
+//         'http://https://college-final-project-1.onrender.com',
 //         'http://192.168.43.95:4200',
 //         'http://192.168.1.147:4200',
 //         process.env.CLIENT_URL
@@ -129,8 +129,8 @@ connectDB();
    MIDDLEWARE
 ========================= */
 app.use(cors({
-    origin: process.env.CLIENT_URL || '*',
-    credentials: true
+   origin: process.env.CLIENT_URL || '*',
+   credentials: true
 }));
 
 app.use(express.json());
@@ -153,22 +153,22 @@ app.use('/api/messages', messageRoutes);
    HEALTH CHECK
 ========================= */
 app.get('/api/health', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
-        message: 'API server running on Vercel'
-    });
+   res.status(200).json({
+      status: 'OK',
+      message: 'API server running on Vercel'
+   });
 });
 
 /* =========================
    ERROR HANDLING
 ========================= */
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ message: 'Internal Server Error' });
+   console.error(err.stack);
+   res.status(500).json({ message: 'Internal Server Error' });
 });
 
 app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+   res.status(404).json({ message: 'Route not found' });
 });
 
 /* =========================

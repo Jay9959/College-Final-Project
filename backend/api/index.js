@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config(); // Reload after .env update
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -6,16 +6,16 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 
 // --- Routes import
-const authRoutes = require('./routes/auth');       // auth routes
-const userRoutes = require('./routes/users');      // user routes
-const messageRoutes = require('./routes/messages'); // message routes
+const authRoutes = require('../routes/auth');       // auth routes
+const userRoutes = require('../routes/users');      // user routes
+const messageRoutes = require('../routes/messages'); // message routes
 
 const app = express();
 const server = http.createServer(app);
 
-// --- 1️⃣ CORS for Vercel frontend
+// --- 1️⃣ CORS for frontend
 app.use(cors({
-    origin: ['https://college-final-project-1.onrender.com'], // Replace with your actual Vercel URL
+    origin: ['https://college-final-project-1.onrender.com', 'http://localhost:4200'],
     credentials: true
 }));
 
@@ -32,14 +32,14 @@ mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB error:', err));
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB error:', err));
 
 // --- 5️⃣ Socket.IO Setup
 const io = new Server(server, {
     cors: {
-        origin: ['https://college-final-project-1.onrender.com'], // Replace with your actual Vercel URL
-        methods: ['GET','POST'],
+        origin: ['https://college-final-project-1.onrender.com', 'http://localhost:4200'],
+        methods: ['GET', 'POST'],
         credentials: true
     }
 });

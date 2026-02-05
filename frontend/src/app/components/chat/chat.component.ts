@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { SocketService } from '../../services/socket.service';
 import { ChatService } from '../../services/chat.service';
@@ -320,19 +320,34 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     loadUsers(): void {
-        this.chatService.getUsers().subscribe({
-            next: (users) => {
-                this.users = users;
+        forkJoin({
+            users: this.chatService.getUsers(),
+            groups: this.chatService.getGroups()
+        }).subscribe({
+            next: ({ users, groups }) => {
+                const mappedGroups: User[] = groups.map(g => ({
+                    _id: g._id,
+                    username: g.name,
+                    fullName: g.name,
+                    email: '',
+                    avatar: g.avatar,
+                    isOnline: true,
+                    isGroup: true,
+                    participants: g.members.map((m: any) => m._id || m)
+                }));
+
+                this.users = [...mappedGroups, ...users];
+
                 // Restore last selected user from sessionStorage
                 const savedUserId = sessionStorage.getItem('selectedUserId');
                 if (savedUserId) {
-                    const savedUser = users.find(u => u._id === savedUserId);
+                    const savedUser = this.users.find(u => u._id === savedUserId);
                     if (savedUser) {
                         this.selectUser(savedUser);
                     }
                 }
             },
-            error: (err) => console.error('Failed to load users:', err)
+            error: (err) => console.error('Failed to load users/groups:', err)
         });
     }
 
@@ -1528,11 +1543,23 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             return;
         }
 
-        if (this.selectedUser && this.selectedUser.participants) {
+        if (this.selectedUser && this.selectedUser.isGroup) {
             const newMembers = Array.from(this.selectedParticipants);
-            this.selectedUser.participants.push(...newMembers);
-            this.toastService.show(`${newMembers.length} members added to the group`);
-            this.closeAddMembersModal();
+
+            this.chatService.addGroupMembers(this.selectedUser._id, newMembers).subscribe({
+                next: (updatedGroup) => {
+                    if (this.selectedUser) {
+                        // Update local state
+                        this.selectedUser.participants = updatedGroup.members.map((m: any) => m._id || m);
+                        this.toastService.show(`${newMembers.length} members added via backend`);
+                    }
+                    this.closeAddMembersModal();
+                },
+                error: (err) => {
+                    console.error('Failed to add members:', err);
+                    this.toastService.show('Failed to add members');
+                }
+            });
         }
     }
 
@@ -1619,25 +1646,36 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             return;
         }
 
-        const newGroup: User = {
-            _id: 'group_' + Date.now(),
-            username: this.newGroupName,
-            fullName: this.newGroupName,
-            email: '', // Not needed for group
-            avatar: this.newGroupIconPreview || undefined,
-            isOnline: true,
-            isGroup: true,
-            participants: [this.currentUser!._id, ...Array.from(this.selectedParticipants)]
-        };
+        const members = Array.from(this.selectedParticipants);
+        const avatar = this.newGroupIconPreview || undefined;
 
-        // Add to the top of users list
-        this.users.unshift(newGroup);
+        this.chatService.createGroup({
+            name: this.newGroupName,
+            members: members,
+            avatar: avatar
+        }).subscribe({
+            next: (savedGroup) => {
+                const newGroup: User = {
+                    _id: savedGroup._id,
+                    username: savedGroup.name,
+                    fullName: savedGroup.name,
+                    email: '',
+                    avatar: savedGroup.avatar,
+                    isOnline: true,
+                    isGroup: true,
+                    participants: savedGroup.members.map((m: any) => m._id || m)
+                };
 
-        // Select the newly created group
-        this.selectUser(newGroup);
-
-        this.toastService.show(`Group "${this.newGroupName}" created!`);
-        this.closeNewGroupModal();
+                this.users.unshift(newGroup);
+                this.selectUser(newGroup);
+                this.toastService.show(`Group "${this.newGroupName}" created!`);
+                this.closeNewGroupModal();
+            },
+            error: (err) => {
+                console.error('Create group failed:', err);
+                this.toastService.show('Failed to create group');
+            }
+        });
     }
 
     toggleMuteChat(): void {

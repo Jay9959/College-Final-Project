@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
 const { protect } = require('../middleware/auth');
+const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -14,6 +15,58 @@ const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+});
+
+// @route   POST /api/messages
+// @desc    Send a message (Text, or with file URL)
+// @access  Private
+router.post('/', protect, async (req, res) => {
+    try {
+        const { receiver, group, content, fileUrl, messageType, fileName, mimeType } = req.body;
+
+        if (!content && !fileUrl) {
+            return res.status(400).json({ message: 'Message content or file is required' });
+        }
+
+        let newMessageData = {
+            sender: req.user._id,
+            content,
+            fileUrl,
+            messageType: messageType || 'text',
+            fileName,
+            mimeType,
+            seen: false,
+            delivered: false
+        };
+
+        if (group) {
+            newMessageData.group = group;
+        } else if (receiver) {
+            newMessageData.receiver = receiver;
+        } else {
+            return res.status(400).json({ message: 'Recipient or Group required' });
+        }
+
+        let message = await Message.create(newMessageData);
+
+        message = await message.populate('sender', 'username avatar');
+        if (receiver) message = await message.populate('receiver', 'username avatar');
+        if (group) message = await message.populate('group');
+
+        // Update Group last message
+        if (group) {
+            const Group = require('../models/Group');
+            await Group.findByIdAndUpdate(group, {
+                lastMessage: message._id,
+                lastMessageAt: new Date()
+            });
+        }
+
+        res.status(201).json(message);
+    } catch (error) {
+        console.error('Send message error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
 });
 
 // @route   POST /api/messages/upload
@@ -75,10 +128,17 @@ router.get('/file/:id', async (req, res) => {
 // @access  Private
 router.get('/:userId', protect, async (req, res) => {
     try {
+        const { userId } = req.params;
+
+        // Check if userId is a valid MongoDB ObjectId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
         const messages = await Message.find({
             $or: [
-                { sender: req.user._id, receiver: req.params.userId },
-                { sender: req.params.userId, receiver: req.user._id }
+                { sender: req.user._id, receiver: userId },
+                { sender: userId, receiver: req.user._id }
             ]
         })
             .sort({ createdAt: 1 })
@@ -97,9 +157,21 @@ router.get('/:userId', protect, async (req, res) => {
 // @access  Private
 router.put('/read/:senderId', protect, async (req, res) => {
     try {
+        const { senderId } = req.params;
+
+        // If senderId is a Group ID or not a valid User ID, we might need different handling
+        // For now, prevent crash if it's not a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(senderId)) {
+            // If it looks like a group ID (which might be passed by frontend logic), 
+            // we simple won't update 'read' status for 1-on-1 messages, 
+            // or we should handle group read receipts differently.
+            // For now: return success to client so it doesn't error out.
+            return res.status(200).json({ message: 'Skipped invalid/group ID', modifiedCount: 0 });
+        }
+
         const result = await Message.updateMany(
             {
-                sender: req.params.senderId,
+                sender: senderId,
                 receiver: req.user._id,
                 seen: false
             },

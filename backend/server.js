@@ -14,6 +14,7 @@ require('./config/passport');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const messageRoutes = require('./routes/messages');
+const groupRoutes = require('./routes/groups');
 
 const app = express();
 const server = http.createServer(app);
@@ -46,6 +47,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/groups', groupRoutes);
 
 /* =========================
    HEALTH CHECK
@@ -75,12 +77,25 @@ io.on('connection', (socket) => {
       io.emit('online-users', Array.from(onlineUsers.keys()));
    });
 
+   // Join a group room
+   socket.on('join-group', (groupId) => {
+      socket.join(groupId);
+      console.log(`User joined group: ${groupId}`);
+   });
+
    socket.on('send-message', (data) => {
       const recipientSocket = onlineUsers.get(data.to);
       if (recipientSocket) {
          io.to(recipientSocket).emit('receive-message', data);
          socket.emit('message-sent', data);
       }
+   });
+
+   // Send group message
+   socket.on('send-group-message', (data) => {
+      // data should contain { group: groupId, content: ..., sender: ... }
+      // Broadcast to everyone in the room except the sender
+      socket.to(data.group).emit('receive-group-message', data);
    });
 
    socket.on('disconnect', () => {

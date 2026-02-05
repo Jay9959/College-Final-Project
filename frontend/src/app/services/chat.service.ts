@@ -41,4 +41,16 @@ export class ChatService {
             observe: 'events'
         });
     }
+
+    getGroups(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/groups`);
+    }
+
+    createGroup(groupData: { name: string, members: string[], description?: string, avatar?: string }): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/groups`, groupData);
+    }
+
+    addGroupMembers(groupId: string, members: string[]): Observable<any> {
+        return this.http.put<any>(`${this.apiUrl}/groups/${groupId}/add`, { members });
+    }
 }

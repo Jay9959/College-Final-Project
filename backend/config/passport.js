@@ -20,7 +20,7 @@ passport.deserializeUser(async (id, done) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'mock_client_id',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'mock_client_secret',
-    callbackURL: "http://localhost:5000/api/auth/google/callback"
+    callbackURL: `${process.env.BASE_URL || 'http://localhost:5000'}/api/auth/google/callback`
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         // Check if user exists
@@ -57,7 +57,7 @@ passport.use(new GoogleStrategy({
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID || 'mock_github_id',
     clientSecret: process.env.GITHUB_CLIENT_SECRET || 'mock_github_secret',
-    callbackURL: "http://localhost:5000/api/auth/github/callback",
+    callbackURL: `${process.env.BASE_URL || 'http://localhost:5000'}/api/auth/github/callback`,
     scope: ['user:email']
 }, async (accessToken, refreshToken, profile, done) => {
     // ...

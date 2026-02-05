@@ -107,7 +107,7 @@ const handleMockLogin = async (res, provider) => {
         }
 
         const token = generateToken(user._id);
-        const frontendUrl = process.env.CLIENT_URL || 'https://college-final-project-1.onrender.com';
+        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:4200';
         return res.redirect(`${frontendUrl}/login?token=${token}`);
     } catch (error) {
         console.error('Mock login error:', error);
@@ -128,7 +128,7 @@ router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/login', session: false }),
     (req, res) => {
         const token = generateToken(req.user._id);
-        const frontendUrl = process.env.CLIENT_URL || 'http://https://college-final-project-1.onrender.com';
+        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:4200';
         res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 );
@@ -146,7 +146,7 @@ router.get('/github/callback',
     passport.authenticate('github', { failureRedirect: '/login', session: false }),
     (req, res) => {
         const token = generateToken(req.user._id);
-        const frontendUrl = process.env.CLIENT_URL || 'http://https://college-final-project-1.onrender.com';
+        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:4200';
         res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 );
@@ -214,6 +214,8 @@ router.post('/forgot-password', async (req, res) => {
             email: { $regex: new RegExp(`^${email}$`, 'i') }
         });
 
+        console.log('Forgot Password request for:', email, 'User found:', !!user);
+
         if (!user) {
             return res.status(404).json({ message: 'This email is not registered. Please sign up first.' });
         }
@@ -227,6 +229,7 @@ router.post('/forgot-password', async (req, res) => {
         user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
         await user.save();
+        console.log('OTP generated and saved for user');
 
         const message = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -239,11 +242,13 @@ router.post('/forgot-password', async (req, res) => {
         `;
 
         try {
+            console.log('Attempting to send email...');
             await sendEmail({
                 email: user.email,
                 subject: 'Password Reset OTP',
                 html: message
             });
+            console.log('Email sent successfully');
 
             res.status(200).json({ message: 'OTP sent to email' });
         } catch (err) {

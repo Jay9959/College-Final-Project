@@ -8,6 +8,8 @@ export interface User {
     isOnline: boolean;
     lastSeen?: Date;
     token?: string;
+    isGroup?: boolean;
+    participants?: string[];
 }
 
 export interface AuthResponse {

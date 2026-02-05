@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -146,6 +146,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     tempProfileName = '';
     tempProfileAbout = '';
 
+    // --- Permission Alert State ---
+    showPermissionModal = false;
+    permissionMessage = '';
+
     private typingTimeout: any;
     private subscriptions: Subscription[] = [];
     private shouldScrollToBottom = false;
@@ -156,7 +160,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         private chatService: ChatService,
         private themeService: ThemeService,
         private router: Router,
-        private toastService: ToastService
+        private toastService: ToastService,
+        private cdr: ChangeDetectorRef
     ) {
         this.currentTheme = this.themeService.getTheme();
     }
@@ -316,13 +321,25 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     loadUsers(): void {
         this.chatService.getUsers().subscribe({
-            next: (users) => this.users = users,
+            next: (users) => {
+                this.users = users;
+                // Restore last selected user from sessionStorage
+                const savedUserId = sessionStorage.getItem('selectedUserId');
+                if (savedUserId) {
+                    const savedUser = users.find(u => u._id === savedUserId);
+                    if (savedUser) {
+                        this.selectUser(savedUser);
+                    }
+                }
+            },
             error: (err) => console.error('Failed to load users:', err)
         });
     }
 
     selectUser(user: User): void {
         this.selectedUser = user;
+        // Persist selected user ID for page refresh
+        sessionStorage.setItem('selectedUserId', user._id);
         this.loadMessages(user._id);
         this.markMessagesAsRead(user._id);
     }
@@ -341,12 +358,31 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     setupSocketListeners(): void {
         this.subscriptions.push(
             this.socketService.onMessageSent().subscribe(msg => {
-                if (this.selectedUser && (msg.receiver._id === this.selectedUser._id || msg.sender._id === this.selectedUser._id)) {
-                    this.messages.push(msg);
-                    this.shouldScrollToBottom = true;
+                console.log('Socket: Message sent confirmed', msg);
+                // Check if we have a temporary message for this
+                // Since backend doesn't echo localId, we match by content and temporary ID status
+                const tempMsgIndex = this.messages.findIndex(m =>
+                    m.localId &&
+                    m.localId.startsWith('temp-') &&
+                    m.content === msg.content &&
+                    m.receiver._id === msg.receiver._id
+                );
+
+                if (tempMsgIndex !== -1) {
+                    // Update the existing temporary message with real data from server
+                    this.messages[tempMsgIndex] = { ...this.messages[tempMsgIndex], ...msg, localId: undefined }; // Remove localId
+                    this.cdr.detectChanges();
+                } else {
+                    // If no temp message found (or it was a message from another session/device), push it
+                    if (this.selectedUser && (msg.receiver._id === this.selectedUser._id || msg.sender._id === this.selectedUser._id)) {
+                        this.messages.push(msg);
+                        this.shouldScrollToBottom = true;
+                        this.cdr.detectChanges();
+                    }
                 }
             }),
             this.socketService.onReceiveMessage().subscribe(msg => {
+                console.log('Socket: Message received', msg);
                 // If checking the chat with this user
                 if (this.selectedUser && msg.sender._id === this.selectedUser._id) {
                     this.messages.push(msg);
@@ -358,26 +394,60 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                     if (this.notificationSettings.incomingSounds) {
                         this.playNotificationSound('message'); // Or a generic 'in-chat' sound
                     }
+                    this.cdr.detectChanges();
                 } else {
                     // Message from someone else (or not in chat)
                     this.handleIncomingNotification(msg);
                 }
             }),
-            this.socketService.onUserTyping().subscribe(data => this.typingUsers[data.userId] = data.isTyping),
+            this.socketService.onUserTyping().subscribe(data => {
+                this.typingUsers[data.userId] = data.isTyping;
+                this.cdr.detectChanges();
+            }),
             this.socketService.onMessagesSeen().subscribe(data => {
                 this.messages.forEach(m => { if (data.messageIds.includes(m._id)) { m.seen = true; m.seenAt = data.seenAt; } });
+                this.cdr.detectChanges();
             }),
             this.socketService.onMessageDelivered().subscribe(data => {
                 const msg = this.messages.find(m => m._id === data.messageId);
                 if (msg) { msg.delivered = true; msg.deliveredAt = data.deliveredAt; }
+                this.cdr.detectChanges();
             })
         );
     }
 
     sendMessage(): void {
         if (!this.newMessage.trim() || !this.selectedUser || !this.currentUser) return;
-        this.socketService.sendMessage({ senderId: this.currentUser._id, receiverId: this.selectedUser._id, content: this.newMessage.trim() });
+
+        const content = this.newMessage.trim();
+        const tempLocalId = 'temp-' + Date.now();
+
+        // Optimistic UI Update: Create and show message immediately
+        const tempMessage: Message = {
+            _id: tempLocalId, // Temporary ID
+            localId: tempLocalId,
+            sender: this.currentUser,
+            receiver: this.selectedUser,
+            content: content,
+            messageType: 'text',
+            delivered: false,
+            seen: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        this.messages.push(tempMessage);
+        this.shouldScrollToBottom = true;
         this.newMessage = '';
+        this.cdr.detectChanges(); // Force update view
+
+        // Send to server
+        this.socketService.sendMessage({
+            senderId: this.currentUser._id,
+            receiverId: this.selectedUser._id,
+            content: content
+        });
+
         this.socketService.sendTyping({ senderId: this.currentUser._id, receiverId: this.selectedUser._id, isTyping: false });
     }
 
@@ -430,6 +500,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         try { if (this.messagesContainer) this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight; } catch { }
     }
 
+    avatarVersion: number = Date.now();
+
     onFileSelected(event: any): void {
         const file: File = event.target.files[0];
         if (file) {
@@ -437,7 +509,17 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             this.authService.uploadAvatar(file).subscribe({
                 next: (res) => {
                     console.log('Avatar upload response:', res);
-                    this.currentUser = { ...this.currentUser!, avatar: res.avatar };
+                    // Force a full update cycle
+                    this.avatarVersion = Date.now();
+
+                    if (this.currentUser) {
+                        // Create a shallow copy to trigger OnPush if used, though default is CheckAlways. 
+                        // The primary goal is to ensure the view sees a 'new' object reference or updated bind.
+                        this.currentUser = { ...this.currentUser, avatar: res.avatar };
+                    }
+
+                    // Manually trigger change detection to ensure the view updates the image src immediately
+                    this.cdr.detectChanges();
                 },
                 error: (err) => {
                     console.error('Avatar upload failed:', err);
@@ -464,6 +546,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         }
     }
 
+    // Profile Photo Upload (Wrapper for onFileSelected)
+    onProfilePhotoSelected(event: any): void {
+        this.onFileSelected(event);
+    }
+
     deselectUser(): void {
         this.selectedUser = null;
     }
@@ -481,6 +568,38 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     onChatFileSelected(event: any): void {
         const file: File = event.target.files[0];
         if (!file || !this.selectedUser || !this.currentUser) return;
+
+        // --- Auto-Download / Media Permission Check (User Request) ---
+        // Intepreting "Auto-download" settings as "Allow sending/uploading" preference
+        const type = file.type;
+        const settings = this.chatSettings.autoDownload;
+
+        if (type.startsWith('image/')) {
+            if (!settings.photos) {
+                this.permissionMessage = 'Photos are disabled in Media Settings.';
+                this.showPermissionModal = true;
+                return;
+            }
+        } else if (type.startsWith('video/')) {
+            if (!settings.videos) {
+                this.permissionMessage = 'Videos are disabled in Media Settings.';
+                this.showPermissionModal = true;
+                return;
+            }
+        } else if (type.startsWith('audio/')) {
+            if (!settings.audio) {
+                this.permissionMessage = 'Audio is disabled in Media Settings.';
+                this.showPermissionModal = true;
+                return;
+            }
+        } else {
+            // Treat everything else as Documents
+            if (!settings.documents) {
+                this.permissionMessage = 'Documents are disabled in Media Settings.';
+                this.showPermissionModal = true;
+                return;
+            }
+        }
 
         // Reset previous preview
         this.previewFile = file;
@@ -535,6 +654,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         // Add to messages list immediately
         this.messages.push(tempMessage);
         this.shouldScrollToBottom = true;
+        this.cdr.detectChanges();
 
         // Close modal immediately
         this.cancelPreview();
@@ -549,6 +669,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                         const progress = Math.round(100 * event.loaded / event.total);
                         if (msgIndex !== -1) {
                             this.messages[msgIndex].uploadProgress = progress;
+                            this.cdr.detectChanges();
                         }
                     }
                 } else if (event.type === HttpEventType.Response) {
@@ -556,12 +677,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                     const res = event.body;
                     console.log('File uploaded:', res);
 
-                    // Remove temp message - socket event will bring the real one
-                    // OR better: keep it until socket event replaces it?
-                    // For now, let's remove it right before sending socket event to avoid duplication
-                    // if the socket event adds a new one.
-                    this.messages = this.messages.filter(m => m.localId !== tempLocalId);
+                    // Update the temp message with the real file URL from server
+                    if (msgIndex !== -1) {
+                        this.messages[msgIndex].fileUrl = res.fileUrl;
+                        this.messages[msgIndex].uploadProgress = undefined; // Remove progress
+                        this.messages[msgIndex].localId = undefined; // Mark as sent
+                        this.cdr.detectChanges();
+                    }
 
+                    // Send socket message to notify receiver
                     this.socketService.sendMessage({
                         senderId: this.currentUser!._id,
                         receiverId: this.selectedUser!._id,
@@ -576,6 +700,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                 alert('Failed to send file');
                 // Remove temp message on error
                 this.messages = this.messages.filter(m => m.localId !== tempLocalId);
+                this.cdr.detectChanges();
             }
         });
     }
@@ -635,6 +760,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     audioChunks: Blob[] = [];
 
     async startRecording(): Promise<void> {
+        // --- Permission Check ---
+        if (!this.chatSettings.autoDownload.audio) {
+            this.permissionMessage = 'Audio is disabled in Media Settings. Cannot record voice notes.';
+            this.showPermissionModal = true;
+            return;
+        }
+
         if (this.isRecording || this.isInitializing) return; // Prevent double start
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -774,6 +906,18 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                 label: d.label || `${d.kind} (${d.deviceId.slice(0, 5)}...)`,
                 deviceId: d.deviceId
             }));
+
+            // Validate selected devices
+            if (this.videoSettings.micDeviceId && !this.audioInputDevices.find(d => d.deviceId === this.videoSettings.micDeviceId)) {
+                this.videoSettings.micDeviceId = '';
+            }
+            if (this.videoSettings.cameraDeviceId && !this.videoInputDevices.find(d => d.deviceId === this.videoSettings.cameraDeviceId)) {
+                this.videoSettings.cameraDeviceId = '';
+            }
+            if (this.videoSettings.speakerDeviceId && !this.audioOutputDevices.find(d => d.deviceId === this.videoSettings.speakerDeviceId)) {
+                this.videoSettings.speakerDeviceId = '';
+            }
+            this.saveSettings();
         } catch (err) {
             console.error('Error fetching devices', err);
         }
@@ -930,6 +1074,27 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.activeNotifDropdown = null;
     }
 
+    selectGeneralSetting(settingKey: string, value: any) {
+        (this.generalSettings as any)[settingKey] = value;
+        if (settingKey === 'fontSize') {
+            this.applyFontSize();
+        }
+        this.saveSettings();
+        this.activeNotifDropdown = null;
+    }
+
+    selectPrivacySetting(settingKey: string, value: any) {
+        (this.privacySettings as any)[settingKey] = value;
+        this.saveSettings();
+        this.activeNotifDropdown = null;
+    }
+
+    selectVideoSetting(settingKey: string, value: any) {
+        (this.videoSettings as any)[settingKey] = value;
+        this.saveSettings();
+        this.activeNotifDropdown = null;
+    }
+
     @HostListener('document:click')
     closeNotifDropdowns() {
         this.activeNotifDropdown = null;
@@ -1079,5 +1244,701 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
         this.selectTheme(themeToSet);
         this.closeThemeModal();
+    }
+
+    closePermissionModal() {
+        this.showPermissionModal = false;
+        this.permissionMessage = '';
+    }
+
+    // --- Attachment Menu ---
+    showAttachmentMenu = false;
+    @ViewChild('documentInput') documentInput!: ElementRef<HTMLInputElement>;
+    @ViewChild('photoInput') photoInput!: ElementRef<HTMLInputElement>;
+    @ViewChild('audioInput') audioInput!: ElementRef<HTMLInputElement>;
+    @ViewChild('cameraInput') cameraInput!: ElementRef<HTMLInputElement>;
+
+    toggleAttachmentMenu(): void {
+        this.showAttachmentMenu = !this.showAttachmentMenu;
+        // Close emoji picker if open
+        if (this.showAttachmentMenu) {
+            this.showEmojiPicker = false;
+        }
+    }
+
+    selectAttachmentType(type: string): void {
+        this.showAttachmentMenu = false;
+
+        switch (type) {
+            case 'document':
+                this.documentInput?.nativeElement.click();
+                break;
+            case 'photos':
+                this.photoInput?.nativeElement.click();
+                break;
+            case 'camera':
+                this.cameraInput?.nativeElement.click();
+                break;
+            case 'audio':
+                this.audioInput?.nativeElement.click();
+                break;
+            case 'contact':
+                this.toastService.show('Contact sharing coming soon!');
+                break;
+            case 'poll':
+                this.openPollModal();
+                break;
+            case 'event':
+                this.toastService.show('Event creation coming soon!');
+                break;
+            case 'sticker':
+                this.toastService.show('Sticker creation coming soon!');
+                break;
+        }
+    }
+
+    // --- Call Menu ---
+    showCallMenu = false;
+
+    toggleCallMenu(): void {
+        this.showCallMenu = !this.showCallMenu;
+        // Close attachment menu if open
+        if (this.showCallMenu) {
+            this.showAttachmentMenu = false;
+            this.showEmojiPicker = false;
+        }
+    }
+
+    handleCallOption(option: string): void {
+        this.showCallMenu = false;
+        switch (option) {
+            case 'groupCall':
+                this.toastService.show('Group call coming soon!');
+                break;
+            case 'callLink':
+                this.toastService.show('Call link copied!');
+                break;
+            case 'scheduleCall':
+                this.toastService.show('Schedule call coming soon!');
+                break;
+        }
+    }
+
+    // --- Chat Search ---
+    showChatSearch = false;
+    chatSearchQuery = '';
+    searchResultCount = 0;
+    currentSearchIndex = 0;
+    searchResultIndices: number[] = [];
+
+    toggleChatSearch(): void {
+        this.showChatSearch = !this.showChatSearch;
+        if (!this.showChatSearch) {
+            this.closeChatSearch();
+        }
+        // Close other menus
+        this.showCallMenu = false;
+        this.showMoreMenu = false;
+    }
+
+    closeChatSearch(): void {
+        this.showChatSearch = false;
+        this.chatSearchQuery = '';
+        this.searchResultCount = 0;
+        this.currentSearchIndex = 0;
+        this.searchResultIndices = [];
+    }
+
+    onChatSearch(): void {
+        if (!this.chatSearchQuery.trim()) {
+            this.searchResultCount = 0;
+            this.currentSearchIndex = 0;
+            this.searchResultIndices = [];
+            return;
+        }
+
+        const query = this.chatSearchQuery.toLowerCase();
+        this.searchResultIndices = [];
+
+        this.messages.forEach((msg, index) => {
+            if (msg.content && msg.content.toLowerCase().includes(query)) {
+                this.searchResultIndices.push(index);
+            }
+        });
+
+        this.searchResultCount = this.searchResultIndices.length;
+        this.currentSearchIndex = 0;
+
+        if (this.searchResultCount > 0) {
+            this.scrollToSearchResult();
+        }
+    }
+
+    scrollToSearchResult(): void {
+        if (this.searchResultIndices.length === 0) return;
+        const msgIndex = this.searchResultIndices[this.currentSearchIndex];
+        const messageElements = document.querySelectorAll('.message');
+        if (messageElements[msgIndex]) {
+            messageElements[msgIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Highlight the message briefly
+            messageElements[msgIndex].classList.add('search-highlight');
+            setTimeout(() => {
+                messageElements[msgIndex].classList.remove('search-highlight');
+            }, 2000);
+        }
+    }
+
+    prevSearchResult(): void {
+        if (this.currentSearchIndex > 0) {
+            this.currentSearchIndex--;
+            this.scrollToSearchResult();
+        }
+    }
+
+    nextSearchResult(): void {
+        if (this.currentSearchIndex < this.searchResultCount - 1) {
+            this.currentSearchIndex++;
+            this.scrollToSearchResult();
+        }
+    }
+
+    // --- More Menu ---
+    showMoreMenu = false;
+
+    toggleMoreMenu(): void {
+        this.showMoreMenu = !this.showMoreMenu;
+        // Close other menus
+        if (this.showMoreMenu) {
+            this.showCallMenu = false;
+            this.showAttachmentMenu = false;
+        }
+    }
+
+    mutedChats: Set<string> = new Set();
+
+    handleMoreOption(option: string): void {
+        this.showMoreMenu = false;
+        switch (option) {
+            case 'newGroup':
+                this.openNewGroupModal();
+                break;
+            case 'selectMessages':
+                this.enableSelectMode();
+                break;
+            case 'muteNotifications':
+                this.toggleMuteChat();
+                break;
+            case 'clearChat':
+                this.clearChat();
+                break;
+        }
+    }
+
+    // --- Group Info ---
+    showGroupInfo = false;
+    showExitGroupConfirm = false;
+    showInviteModal = false;
+    showAddMembersModal = false;
+    groupInviteLink = '';
+
+    openGroupInfo(): void {
+        if (this.selectedUser?.isGroup) {
+            this.showGroupInfo = true;
+        }
+    }
+
+    closeGroupInfo(): void {
+        this.showGroupInfo = false;
+    }
+
+    openInviteModal(): void {
+        if (this.selectedUser) {
+            this.groupInviteLink = `https://chat.app/join/${this.selectedUser._id}`;
+            this.showInviteModal = true;
+        }
+    }
+
+    closeInviteModal(): void {
+        this.showInviteModal = false;
+    }
+
+    copyInviteLink(): void {
+        navigator.clipboard.writeText(this.groupInviteLink);
+        this.toastService.show('Invite link copied!');
+    }
+
+    exitGroup(): void {
+        this.showExitGroupConfirm = true;
+    }
+
+    closeExitGroupConfirm(): void {
+        this.showExitGroupConfirm = false;
+    }
+
+    confirmExitGroup(): void {
+        if (!this.selectedUser) return;
+
+        const groupName = this.selectedUser.fullName || this.selectedUser.username;
+        // Remove from local users list
+        const index = this.users.findIndex(u => u._id === this.selectedUser?._id);
+        if (index !== -1) {
+            this.users.splice(index, 1);
+        }
+        this.selectedUser = null;
+        this.showGroupInfo = false;
+        this.showExitGroupConfirm = false;
+        this.toastService.show(`You left "${groupName}"`);
+    }
+
+    openAddMembersModal(): void {
+        if (!this.selectedUser) return;
+        this.selectedParticipants.clear();
+        this.showAddMembersModal = true;
+    }
+
+    closeAddMembersModal(): void {
+        this.showAddMembersModal = false;
+        this.selectedParticipants.clear();
+    }
+
+    getUsersNotInGroup(): User[] {
+        if (!this.selectedUser) return [];
+        const participantIds = new Set(this.selectedUser.participants || []);
+        const curUser = this.currentUser;
+        if (!curUser) return [];
+
+        const currentUserId = curUser._id?.toString();
+        const currentUsername = curUser.username?.toLowerCase();
+        const currentEmail = curUser.email?.toLowerCase();
+
+        return this.users.filter(u => {
+            if (u.isGroup) return false;
+
+            const isMe = (u._id?.toString() === currentUserId) ||
+                (u.username?.toLowerCase() === currentUsername) ||
+                (u.email?.toLowerCase() === currentEmail);
+
+            return !isMe && !participantIds.has(u._id);
+        });
+    }
+
+    confirmAddMembers(): void {
+        if (this.selectedParticipants.size === 0) {
+            this.toastService.show('Select at least one member');
+            return;
+        }
+
+        if (this.selectedUser && this.selectedUser.participants) {
+            const newMembers = Array.from(this.selectedParticipants);
+            this.selectedUser.participants.push(...newMembers);
+            this.toastService.show(`${newMembers.length} members added to the group`);
+            this.closeAddMembersModal();
+        }
+    }
+
+    getParticipantInfo(userId: string): User | undefined {
+        return this.users.find(u => u._id === userId);
+    }
+
+    // --- New Group ---
+    showNewGroupModal = false;
+    newGroupStep: 1 | 2 = 1;
+    newGroupName = '';
+    selectedParticipants: Set<string> = new Set();
+    groupSearchQuery = '';
+    newGroupIconPreview: string | null = null;
+    selectedGroupIconFile: File | null = null;
+
+    openNewGroupModal(): void {
+        this.showNewGroupModal = true;
+        this.newGroupStep = 1;
+        this.selectedParticipants.clear();
+        this.newGroupName = '';
+        this.groupSearchQuery = '';
+        this.newGroupIconPreview = null;
+        this.selectedGroupIconFile = null;
+    }
+
+    closeNewGroupModal(): void {
+        this.showNewGroupModal = false;
+    }
+
+    get filteredGroupUsers(): User[] {
+        const curUser = this.currentUser;
+        const q = this.groupSearchQuery.toLowerCase().trim();
+
+        return this.users.filter(u => {
+            if (u.isGroup) return false;
+
+            // Strict check to exclude Jay (current user)
+            const isMe = (u._id?.toString() === curUser?._id?.toString()) ||
+                (u.username?.toLowerCase() === curUser?.username?.toLowerCase()) ||
+                (u.email?.toLowerCase() === curUser?.email?.toLowerCase());
+
+            if (isMe) return false;
+
+            const matchesSearch = !q ||
+                (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+                (u.username && u.username.toLowerCase().includes(q));
+
+            return matchesSearch;
+        });
+    }
+
+    toggleParticipant(userId: string): void {
+        if (this.selectedParticipants.has(userId)) {
+            this.selectedParticipants.delete(userId);
+        } else {
+            this.selectedParticipants.add(userId);
+        }
+    }
+
+    nextGroupStep(): void {
+        if (this.selectedParticipants.size === 0) {
+            this.toastService.show('Select at least one participant');
+            return;
+        }
+        this.newGroupStep = 2;
+    }
+
+    onGroupIconSelected(event: any): void {
+        const file = event.target.files[0];
+        if (file) {
+            this.selectedGroupIconFile = file;
+            const reader = new FileReader();
+            reader.onload = () => {
+                this.newGroupIconPreview = reader.result as string;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    createGroup(): void {
+        if (!this.newGroupName.trim()) {
+            this.toastService.show('Enter a group name');
+            return;
+        }
+
+        const newGroup: User = {
+            _id: 'group_' + Date.now(),
+            username: this.newGroupName,
+            fullName: this.newGroupName,
+            email: '', // Not needed for group
+            avatar: this.newGroupIconPreview || undefined,
+            isOnline: true,
+            isGroup: true,
+            participants: [this.currentUser!._id, ...Array.from(this.selectedParticipants)]
+        };
+
+        // Add to the top of users list
+        this.users.unshift(newGroup);
+
+        // Select the newly created group
+        this.selectUser(newGroup);
+
+        this.toastService.show(`Group "${this.newGroupName}" created!`);
+        this.closeNewGroupModal();
+    }
+
+    toggleMuteChat(): void {
+        if (!this.selectedUser) return;
+        const userId = this.selectedUser._id;
+        if (this.mutedChats.has(userId)) {
+            this.mutedChats.delete(userId);
+            this.toastService.show('Notifications unmuted');
+        } else {
+            this.mutedChats.add(userId);
+            this.toastService.show('Notifications muted');
+        }
+    }
+
+    clearChat(): void {
+        if (!this.selectedUser) return;
+
+        const userName = this.selectedUser.fullName || this.selectedUser.username;
+        if (confirm(`Clear all messages with ${userName}?\n\nThis will only remove messages from your view.`)) {
+            const messageCount = this.messages.length;
+            this.messages = [];
+            this.toastService.show(`${messageCount} message(s) cleared`);
+            this.cdr.detectChanges();
+        }
+    }
+
+    // --- Message Selection Mode ---
+    isSelectMode = false;
+    selectedMessages = new Set<string>();
+
+    enableSelectMode(): void {
+        this.isSelectMode = true;
+        this.selectedMessages.clear();
+        this.toastService.show('Select messages to delete, copy or forward');
+    }
+
+    cancelSelectMode(): void {
+        this.isSelectMode = false;
+        this.selectedMessages.clear();
+    }
+
+    toggleMessageSelection(message: Message): void {
+        if (this.selectedMessages.has(message._id)) {
+            this.selectedMessages.delete(message._id);
+        } else {
+            this.selectedMessages.add(message._id);
+        }
+    }
+
+    copySelectedMessages(): void {
+        if (this.selectedMessages.size === 0) return;
+
+        const selectedMsgs = this.messages.filter(m => this.selectedMessages.has(m._id));
+        const textToCopy = selectedMsgs
+            .map(m => m.content || '[Media]')
+            .join('\n');
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            this.toastService.show('Messages copied!');
+            this.cancelSelectMode();
+        }).catch(() => {
+            this.toastService.show('Failed to copy messages');
+        });
+    }
+
+    forwardSelectedMessages(): void {
+        if (this.selectedMessages.size === 0) return;
+        this.toastService.show('Forward feature coming soon!');
+        // TODO: Implement forward dialog
+    }
+
+    deleteSelectedMessages(): void {
+        if (this.selectedMessages.size === 0) return;
+
+        const count = this.selectedMessages.size;
+        if (confirm(`Delete ${count} message(s)?`)) {
+            // Remove from local messages array
+            this.messages = this.messages.filter(m => !this.selectedMessages.has(m._id));
+            this.toastService.show(`${count} message(s) deleted`);
+            this.cancelSelectMode();
+            this.cdr.detectChanges();
+
+            // TODO: Also delete from server/database
+        }
+    }
+
+    // --- Poll Creation ---
+    showPollModal = false;
+    pollQuestion = '';
+    pollOptions: string[] = ['', ''];
+    pollAllowMultiple = false;
+
+    openPollModal(): void {
+        this.showPollModal = true;
+        this.pollQuestion = '';
+        this.pollOptions = ['', ''];
+        this.pollAllowMultiple = false;
+    }
+
+    closePollModal(): void {
+        this.showPollModal = false;
+    }
+
+    addPollOption(): void {
+        if (this.pollOptions.length < 10) {
+            this.pollOptions.push('');
+        }
+    }
+
+    removePollOption(index: number): void {
+        if (this.pollOptions.length > 2) {
+            this.pollOptions.splice(index, 1);
+        }
+    }
+
+    canSendPoll(): boolean {
+        const hasQuestion = this.pollQuestion.trim().length > 0;
+        const validOptions = this.pollOptions.filter(o => o.trim().length > 0);
+        return hasQuestion && validOptions.length >= 2;
+    }
+
+    sendPoll(): void {
+        if (!this.canSendPoll() || !this.selectedUser || !this.currentUser) return;
+
+        const validOptions = this.pollOptions.filter(o => o.trim().length > 0);
+
+        // Create poll message content
+        const pollContent = JSON.stringify({
+            type: 'poll',
+            question: this.pollQuestion.trim(),
+            options: validOptions.map(opt => ({
+                text: opt.trim(),
+                votes: []
+            })),
+            allowMultiple: this.pollAllowMultiple,
+            createdBy: this.currentUser._id
+        });
+
+        // Create a local message for optimistic UI
+        const tempLocalId = 'temp-' + Date.now();
+        const tempMessage: Message = {
+            _id: tempLocalId,
+            localId: tempLocalId,
+            sender: this.currentUser,
+            receiver: this.selectedUser,
+            content: pollContent,
+            messageType: 'poll' as any,
+            delivered: false,
+            seen: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        this.messages.push(tempMessage);
+        this.shouldScrollToBottom = true;
+        this.cdr.detectChanges();
+
+        // Send via socket
+        this.socketService.sendMessage({
+            senderId: this.currentUser._id,
+            receiverId: this.selectedUser._id,
+            content: pollContent,
+            messageType: 'poll'
+        });
+
+        this.closePollModal();
+        this.toastService.show('Poll sent!');
+    }
+
+    // Helper to parse poll data
+    getPollData(message: Message): any {
+        try {
+            if (!message.content) return null;
+            return JSON.parse(message.content);
+        } catch {
+            return null;
+        }
+    }
+
+    trackByIndex(index: number, item: any): number {
+        return index;
+    }
+
+    // Track poll votes: { messageId: selectedOptionIndex }
+    pollVotes: Map<string, number> = new Map();
+
+    isPollOptionSelected(messageId: string, optionIndex: number): boolean {
+        return this.pollVotes.get(messageId) === optionIndex;
+    }
+
+    votePollOption(message: Message, optionIndex: number): void {
+        const poll = this.getPollData(message);
+        if (!poll) return;
+
+        const isAlreadySelected = this.pollVotes.get(message._id) === optionIndex;
+
+        // Toggle vote
+        if (isAlreadySelected) {
+            this.pollVotes.delete(message._id);
+        } else {
+            // If multiple not allowed, remove previous vote
+            if (!poll.allowMultiple) {
+                this.pollVotes.set(message._id, optionIndex);
+            } else {
+                // TODO: For multiple, we'd need a Set per messageId
+                this.pollVotes.set(message._id, optionIndex);
+            }
+        }
+
+        // Update the poll data in the message
+        if (this.currentUser) {
+            poll.options.forEach((opt: any, i: number) => {
+                opt.votes = opt.votes || [];
+                const userIndex = opt.votes.indexOf(this.currentUser!._id);
+
+                if (i === optionIndex) {
+                    if (userIndex === -1) {
+                        opt.votes.push(this.currentUser!._id);
+                    } else if (isAlreadySelected) {
+                        opt.votes.splice(userIndex, 1);
+                    }
+                } else if (!poll.allowMultiple) {
+                    // Remove from other options if multiple not allowed
+                    if (userIndex > -1) {
+                        opt.votes.splice(userIndex, 1);
+                    }
+                }
+            });
+
+            // Update message content
+            message.content = JSON.stringify(poll);
+        }
+
+        this.toastService.show(isAlreadySelected ? 'Vote removed' : 'Vote recorded!');
+        this.cdr.detectChanges();
+    }
+
+    getTotalPollVotes(message: Message): number {
+        const poll = this.getPollData(message);
+        if (!poll) return 0;
+
+        const uniqueVoters = new Set();
+        poll.options.forEach((opt: any) => {
+            if (opt.votes) {
+                opt.votes.forEach((v: string) => uniqueVoters.add(v));
+            }
+        });
+        return uniqueVoters.size;
+    }
+
+    // --- Forward Feature ---
+    showForwardModal = false;
+    forwardSearchQuery = '';
+
+    get filteredForwardUsers(): User[] {
+        if (!this.forwardSearchQuery.trim()) return this.users;
+        const q = this.forwardSearchQuery.toLowerCase();
+        return this.users.filter(u =>
+            (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+            (u.username && u.username.toLowerCase().includes(q))
+        );
+    }
+
+    openForwardModal(): void {
+        if (this.selectedMessages.size === 0) {
+            this.toastService.show('Select messages to forward first');
+            return;
+        }
+        this.showForwardModal = true;
+    }
+
+    closeForwardModal(): void {
+        this.showForwardModal = false;
+        this.forwardSearchQuery = '';
+    }
+
+    forwardToUser(user: User): void {
+        const messagesToForward = this.messages.filter(m => this.selectedMessages.has(m._id));
+
+        messagesToForward.forEach(msg => {
+            this.socketService.sendMessage({
+                senderId: this.currentUser!._id,
+                receiverId: user._id,
+                content: msg.content,
+                messageType: msg.messageType
+            });
+        });
+
+        this.closeForwardModal();
+        this.cancelSelectMode();
+        this.toastService.show(`Forwarded ${messagesToForward.length} message(s) to ${user.fullName || user.username}`);
+    }
+
+    handleImageError(event: any): void {
+        event.target.style.display = 'none';
+        const parent = event.target.parentElement;
+        if (parent) {
+            const fallback = parent.querySelector('.avatar-fallback');
+            if (fallback) {
+                fallback.style.display = 'flex';
+            }
+        }
     }
 }

@@ -165,3 +165,50 @@ input[type="checkbox"]:checked~.custom-checkbox {
     box-shadow: 0 0 0 0 rgba(79, 172, 254, 0);
   }
 }
+
+/* --- Light Theme Overrides --- */
+body.theme-light {
+  /* Patterns */
+  --grad-mesh: radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(245, 87, 108, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(34, 211, 238, 0.1) 0px, transparent 50%);
+
+  /* Backgrounds */
+  --bg-deep: #ffffff;
+  --bg-surface: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+
+  /* Glass Effects */
+  --glass-heavy: rgba(255, 255, 255, 0.85);
+  --glass-medium: rgba(255, 255, 255, 0.6);
+  --glass-light: rgba(0, 0, 0, 0.03);
+
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(0, 0, 0, 0.1);
+
+  /* Typography */
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  /* Shadows */
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+  --shadow-neon: 0 0 20px rgba(79, 172, 254, 0.2);
+
+  /* Autofill Hack Color */
+  --autofill-bg: #e2e8f0;
+}
+
+/* Fix input autofill color for light theme */
+body.theme-light input:-webkit-autofill,
+body.theme-light input:-webkit-autofill:hover,
+body.theme-light input:-webkit-autofill:focus,
+body.theme-light input:-webkit-autofill:active {
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  box-shadow: 0 0 0 30px #e2e8f0 inset !important;
+}

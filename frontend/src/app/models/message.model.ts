@@ -12,7 +12,7 @@ export interface Message {
     };
     content?: string;
     fileUrl?: string;
-    messageType: 'text' | 'image' | 'file' | 'audio' | 'video' | 'call_log';
+    messageType: 'text' | 'image' | 'file' | 'audio' | 'video' | 'call_log' | 'poll';
     delivered: boolean;
     deliveredAt?: Date;
     seen: boolean;
@@ -30,7 +30,7 @@ export interface SendMessageData {
     receiverId: string;
     content?: string;
     fileUrl?: string;
-    messageType?: 'text' | 'image' | 'file' | 'audio' | 'video' | 'call_log';
+    messageType?: 'text' | 'image' | 'file' | 'audio' | 'video' | 'call_log' | 'poll';
 }
 
 export interface TypingData {

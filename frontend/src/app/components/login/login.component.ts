@@ -594,8 +594,8 @@ export class LoginComponent {
   }
 
   loginWith(provider: string): void {
-    const backendUrl = 'http://192.168.43.95:5000/api/auth';
-    window.location.href = `${backendUrl}/${provider}`;
+    const backendUrl = this.authService.getApiUrl();
+    window.location.href = `${backendUrl}/auth/${provider}`;
   }
 
   togglePassword(): void {

@@ -1,158 +1,133 @@
-# Real-Time Chat Application
+# Real-time Chat Application
 
-A complete real-time chat application with one-to-one messaging, online/offline status, typing indicators, and message delivery/seen status.
-
-## Tech Stack
-
-- **Backend**: Node.js + Express.js + Socket.IO
-- **Database**: MongoDB with Mongoose
-- **Frontend**: Angular 18 (Standalone Components)
-- **Authentication**: JWT with bcrypt password hashing
+A full-featured, real-time messaging application built with the MEAN stack (MongoDB, Express.js, Angular, Node.js) and Socket.io.
 
 ## Features
 
-✅ User registration & login  
-✅ One-to-one real-time messaging  
-✅ Online/offline user status  
-✅ Typing indicator  
-✅ Message delivered & seen status (✓ ✓✓)  
-✅ Chat history stored in MongoDB  
-✅ Secure REST APIs with JWT  
-✅ WhatsApp-like dark theme UI  
+### 🚀 Core Functionality
+- **Real-time Messaging**: Instant message delivery using Socket.io.
+- **User Authentication**: Secure Login and Registration system.
+- **One-on-One Chat**: Private conversations between users.
+- **Group Chat**: Create groups and chat with multiple members.
+- **User Presence**: Real-time Online/Offline status indicators.
+- **Typing Indicators**: See when the other user is typing.
+- **Read Receipts**: Message delivery and "seen" status updates.
+
+### 📸 Media & Sharing
+- **File Sharing**: Send images, videos, audio, and documents.
+- **Media Previews**: Preview images and videos before sending.
+- **Avatar Upload**: Custom profile picture uploads.
+
+### 📞 Communication
+- **Voice Calls**: High-quality voice calling.
+- **Video Calls**: Real-time video calling support.
+- **Call Logs**: History of missed and ended calls.
+
+### ⚙️ Customization & Settings
+- **Themes**: Switch between Light, Dark, and System themes.
+- **Wallpapers**: Custom chat wallpapers with doodle support.
+- **Privacy Settings**: Control who can see your Last Seen, Profile Photo, etc.
+- **Notifications**: Custom notification tones and preferences.
+- **Security**: App lock feature with password protection.
+
+## Tech Stack
+
+### Frontend
+- **Framework**: Angular 18+ (Standalone Components)
+- **Styling**: CSS3, Responsive Design
+- **Real-time**: Socket.io-client
+- **HTTP**: HttpClient
+
+### Backend
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: MongoDB (Mongoose ODM)
+- **Real-time**: Socket.io
+- **Authentication**: Passport.js / JWT
+- **File Handling**: Multer
 
 ## Project Structure
 
 ```
-Final Project College/
-├── backend/
-│   ├── config/db.js           # MongoDB connection
-│   ├── middleware/auth.js     # JWT auth middleware
-│   ├── models/
-│   │   ├── User.js            # User schema
-│   │   └── Message.js         # Message schema
-│   ├── routes/
-│   │   ├── auth.js            # Login/Register
-│   │   ├── users.js           # User endpoints
-│   │   └── messages.js        # Message endpoints
-│   ├── socket/socketHandler.js # Socket.IO events
-│   ├── server.js              # Express entry point
-│   ├── .env                   # Environment variables
-│   └── package.json
+├── backend/                 # Node.js/Express Server
+│   ├── config/             # DB and Passport config
+│   ├── models/             # Mongoose Models (User, Message, Group)
+│   ├── routes/             # API Routes (auth, users, messages, groups)
+│   ├── socket/             # Socket.io Event Handlers
+│   └── server.js           # Entry point
 │
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── components/    # Login, Register, Chat
-│   │   │   ├── services/      # Auth, Socket, Chat services
-│   │   │   ├── guards/        # Auth guard
-│   │   │   ├── interceptors/  # JWT interceptor
-│   │   │   ├── models/        # User, Message interfaces
-│   │   │   └── app.routes.ts  # Routing configuration
-│   │   ├── environments/      # API URLs config
-│   │   └── styles.css         # Global styles
-│   └── package.json
-│
-└── README.md
+└── frontend/               # Angular Client
+    ├── src/
+    │   ├── app/
+    │       ├── components/ # UI Components (Chat, Login, etc.)
+    │       ├── models/     # TypeScript Interfaces
+    │       ├── services/   # API and Socket Services
+    │       └── ...
+    └── environments/       # Environment config (Dev/Prod)
 ```
 
-## Prerequisites
+## Setup & Installation
 
-- Node.js 18+ and npm
-- MongoDB running locally on `mongodb://localhost:27017`
-- Angular CLI (optional): `npm install -g @angular/cli`
+### Prerequisites
+- Node.js (v18+)
+- MongoDB (Local or Atlas URL)
+- Angular CLI (`npm install -g @angular/cli`)
 
-## Installation & Setup
+### 1. Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file in the `backend` folder with the following keys:
+   ```env
+   PORT=5000
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   CLIENT_URL=http://localhost:4200
+   ```
+4. Start the server:
+   ```bash
+   npm run dev
+   ```
 
-### 1. Clone/Navigate to Project
+### 2. Frontend Setup
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Update `src/environments/environment.ts` if needed (defaults to localhost:5000).
+4. Run the application:
+   ```bash
+   ng serve
+   ```
+5. Open `http://localhost:4200` in your browser.
 
-```bash
-cd "d:\Work\Final Project College"
-```
+## Deployment
 
-### 2. Start MongoDB
+### Backend
+- Configure `environment.prod.ts` in the frontend to point to your deployed backend URL.
+- Ensure your backend `CLIENT_URL` matches your deployed frontend domain.
+- The backend handles serving static frontend files if built into `backend/dist`.
 
-Make sure MongoDB is running on your system:
-```bash
-# Windows (if installed as service, it should be running)
-# Or start manually:
-mongod
-```
-
-### 3. Setup Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Backend will run on: `http://localhost:5000`
-
-### 4. Setup Frontend (New Terminal)
-
-```bash
-cd frontend
-npm install
-npm start
-```
-
-Frontend will run on: `http://192.168.1.147:4200`
-
-## Usage
-
-1. Open `http://192.168.1.147:4200` in your browser
-2. Click "Sign up" to create a new account
-3. Register another account in an incognito/different browser
-4. Login with both accounts
-5. Select a user from the sidebar to start chatting
-6. Send messages and see real-time updates!
-
-## Environment Variables
-
-Backend `.env` file:
-```
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/chatapp
-JWT_SECRET=your_super_secret_jwt_key_change_in_production
-JWT_EXPIRES_IN=7d
-```
+### Frontend
+- Build the project:
+  ```bash
+  ng build --configuration production
+  ```
+- Upload the `dist` folder to your hosting provider or serve via the backend.
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/register | Register new user |
-| POST | /api/auth/login | User login |
-| POST | /api/auth/logout | User logout |
-| GET | /api/users | Get all users |
-| GET | /api/users/:id | Get user by ID |
-| GET | /api/messages/:userId | Get chat history |
-| PUT | /api/messages/read/:senderId | Mark messages as read |
-
-## Socket.IO Events
-
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| join-user | Client→Server | User connects with userId |
-| send-message | Client→Server | Send a message |
-| receive-message | Server→Client | Receive a message |
-| message-sent | Server→Client | Message sent confirmation |
-| typing | Client→Server | Typing indicator |
-| user-typing | Server→Client | User is typing |
-| message-seen | Client→Server | Mark messages as seen |
-| messages-seen | Server→Client | Messages were seen |
-| user-status-change | Server→Client | Online/offline status |
-
-
-## Screenshots
-
-The application features a WhatsApp-inspired dark theme with:
-- Green accent colors
-- Clean sidebar with user list
-- Chat bubbles with timestamps and status ticks
-- Responsive mobile design
-
----
-
-**Author**: Final Project College  
-**License**: MIT
+- **POST /api/auth/register**: Register a new user.
+- **POST /api/auth/login**: Login user.
+- **GET /api/users**: Get all users.
+- **GET /api/messages/:userId**: Get chat history with a user.
+- **POST /api/groups**: Create a new group.

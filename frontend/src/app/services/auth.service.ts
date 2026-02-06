@@ -38,9 +38,7 @@ export class AuthService {
             username,
             email,
             password
-        }).pipe(
-            tap(response => this.handleAuthResponse(response))
-        );
+        });
     }
 
     login(email: string, password: string): Observable<AuthResponse> {

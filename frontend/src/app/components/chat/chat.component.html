@@ -9,8 +9,8 @@
                     <div *ngIf="!currentUser?.avatar" class="avatar">
                         {{ (currentUser?.username || '').charAt(0).toUpperCase() }}
                     </div>
-                    <img *ngIf="currentUser?.avatar" [src]="getAvatarUrl(currentUser?.avatar) + '?v=' + avatarVersion"
-                        class="avatar-img" alt="{{ currentUser?.username }}" (error)="onAvatarError()">
+                    <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)" class="avatar-img"
+                        alt="{{ currentUser?.username }}" (error)="onAvatarError()">
 
                     <div class="edit-overlay">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -411,6 +411,7 @@
                             <!-- Show Image if auto-downloaded or manually downloaded -->
                             <img *ngIf="shouldShowMedia(message)" [src]="getAvatarUrl(message.fileUrl)" alt="Image"
                                 (click)="downloadFile(message.fileUrl)" title="Click to open"
+                                (contextmenu)="$event.stopPropagation()"
                                 style="max-width: 150px; max-height: 200px; object-fit: cover; border-radius: 12px; cursor: pointer;">
 
                             <!-- Download Placeholder -->
@@ -430,6 +431,7 @@
                         <!-- Video Message -->
                         <div *ngIf="message.messageType === 'video'" class="message-video">
                             <video *ngIf="shouldShowMedia(message)" controls [src]="getAvatarUrl(message.fileUrl)"
+                                (contextmenu)="$event.stopPropagation()"
                                 style="max-width: 250px; max-height: 250px; border-radius: 12px;"></video>
 
                             <!-- Download Placeholder -->
@@ -446,36 +448,35 @@
                             </div>
                         </div>
 
-                        <!-- Generic File Message -->
-                        <div *ngIf="message.messageType === 'file'" class="message-file"
-                            style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                            <a *ngIf="shouldShowMedia(message)" [href]="getAvatarUrl(message.fileUrl)" target="_blank"
-                                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
-                                <div class="file-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                        <polyline points="13 2 13 9 20 9"></polyline>
-                                    </svg>
+                        <!-- Generic File Message (WhatsApp Style) -->
+                        <div *ngIf="message.messageType === 'file'" class="whatsapp-file-card">
+                            <div class="file-card-content">
+                                <div class="file-icon-large" [ngClass]="getFileIconClass(message.content)">
+                                    <span class="file-ext">{{ getFileExtension(message.content) }}</span>
                                 </div>
-                                <div class="file-info" style="display: flex; flex-direction: column;">
-                                    <span class="file-name" style="font-weight: 500;">{{ message.content }}</span>
-                                    <span class="file-label" style="font-size: 0.8em; opacity: 0.8;">Click to
-                                        open</span>
+                                <div class="file-details-text">
+                                    <span class="file-name-text">{{ message.content }}</span>
+                                    <span class="file-meta-text">
+                                        {{ getFileExtension(message.content) }} • FILE
+                                    </span>
                                 </div>
-                            </a>
-                            <!-- Download Placeholder for Files -->
-                            <div *ngIf="!shouldShowMedia(message)" class="media-placeholder small"
-                                (click)="downloadMedia(message)"
-                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <div class="download-icon-wrapper small">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="7 10 12 15 17 10"></polyline>
-                                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                                    </svg>
-                                </div>
-                                <span>{{ message.content }} • Click to download</span>
+                            </div>
+
+                            <div class="file-card-divider"></div>
+
+                            <!-- Actions -->
+                            <div class="file-card-actions">
+                                <ng-container *ngIf="shouldShowMedia(message)">
+                                    <button class="action-text-btn" (click)="openFile(message.fileUrl)">OPEN</button>
+                                    <div class="action-separator"></div>
+                                    <button class="action-text-btn"
+                                        (click)="saveAsFile(message.fileUrl, message.content)">SAVE AS...</button>
+                                </ng-container>
+
+                                <ng-container *ngIf="!shouldShowMedia(message)">
+                                    <button class="action-text-btn" (click)="downloadMedia(message)"
+                                        style="width: 100%">DOWNLOAD</button>
+                                </ng-container>
                             </div>
                         </div>
 
@@ -885,8 +886,7 @@
                     <!-- Profile Card -->
                     <div class="settings-profile-card" (click)="navigateToSettings('profile')">
                         <div class="profile-avatar-large">
-                            <img *ngIf="currentUser?.avatar"
-                                [src]="getAvatarUrl(currentUser?.avatar) + '?v=' + avatarVersion"
+                            <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)"
                                 style="width: 100%; height: 100%; object-fit: cover;">
                             <span *ngIf="!currentUser?.avatar">
                                 {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
@@ -1007,7 +1007,7 @@
                         </svg>
                         <span class="header-title">Profile</span>
                     </button>
-                    <!-- Close button removed or moved as per WhatsApp Web usually just has back in drawer or separate logic -->
+                    <button class="close-btn" (click)="closeSettings()">×</button>
                 </div>
 
                 <div class="settings-content profile-content-premium animate-fade-in">
@@ -1019,8 +1019,7 @@
                                 {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
                             </div>
                             <!-- Image -->
-                            <img *ngIf="currentUser?.avatar"
-                                [src]="getAvatarUrl(currentUser?.avatar) + '?v=' + avatarVersion"
+                            <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)"
                                 class="large-avatar-img" alt="Profile Picture">
 
                             <!-- Hover Overlay -->
@@ -2351,7 +2350,7 @@
     <div class="locked-overlay" *ngIf="isAppLocked">
         <div class="locked-content animate-fade-in">
             <div class="locked-avatar">
-                <img *ngIf="currentUser?.avatar" [src]="getAvatarUrl(currentUser?.avatar)" alt="Avatar">
+                <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)" alt="Avatar">
                 <div *ngIf="!currentUser?.avatar" class="default-initial">{{
                     currentUser?.username?.charAt(0)?.toUpperCase()
                     }}</div>

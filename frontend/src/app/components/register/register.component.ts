@@ -543,17 +543,13 @@ export class RegisterComponent {
   }
 
   loginWith(provider: string): void {
-    const backendUrl = 'http://192.168.43.95:5000/api/auth';
+    const backendUrl = this.authService.getApiUrl();
     const width = 500;
     const height = 600;
     const left = (window.screen.width / 2) - (width / 2);
     const top = (window.screen.height / 2) - (height / 2);
 
-    window.open(
-      `${backendUrl}/${provider}`,
-      'Authentication',
-      `width=${width},height=${height},top=${top},left=${left}`
-    );
+    window.location.href = `${backendUrl}/auth/${provider}`;
   }
 
   togglePassword(): void {
@@ -572,7 +568,8 @@ export class RegisterComponent {
 
     this.authService.register(this.username, this.email, this.password).subscribe({
       next: () => {
-        this.router.navigate(['/chat']);
+        this.toastService.success('Registration successful. Please login.');
+        this.router.navigate(['/login']);
       },
       error: (error) => {
         this.isLoading = false;

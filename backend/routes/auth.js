@@ -48,14 +48,25 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/auth/login
 // @desc    Authenticate user & get token
 // @access  Public
+const LoginHistory = require('../models/LoginHistory');
+
+// @route   POST /api/auth/login
+// @desc    Authenticate user & get token
+// @access  Public
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
         // Find user by email OR username (input field named 'email' carries the identifier)
         // We use the input 'email' as a generic identifier field
+        const identifier = email.trim();
+
+        // Find user by email OR username (case-insensitive)
         const user = await User.findOne({
-            $or: [{ email: email }, { username: email }]
+            $or: [
+                { email: { $regex: new RegExp(`^${identifier}$`, 'i') } },
+                { username: { $regex: new RegExp(`^${identifier}$`, 'i') } }
+            ]
         }).select('+password');
 
         if (!user) {
@@ -71,6 +82,16 @@ router.post('/login', async (req, res) => {
         // Update user online status
         user.isOnline = true;
         await user.save();
+
+        // --- NEW: Save to separate Login History Table ---
+        await LoginHistory.create({
+            user: user._id,
+            email: user.email,
+            username: user.username,
+            ipAddress: req.ip || req.connection.remoteAddress,
+            deviceInfo: req.headers['user-agent']
+        });
+        // ------------------------------------------------
 
         res.json({
             _id: user._id,

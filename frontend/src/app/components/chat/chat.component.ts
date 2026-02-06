@@ -581,6 +581,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         return `${environment.socketUrl}/${normalizedPath}`;
     }
 
+    getProfileAvatar(user: any): string {
+        if (!user || !user.avatar) return ''; // Or return diverse default avatar based on ID
+        let url = this.getAvatarUrl(user.avatar);
+        if (user._id === this.currentUser?._id) {
+            url += `?v=${this.avatarVersion}`;
+        }
+        return url;
+    }
+
     scrollToBottom(): void {
         try { if (this.messagesContainer) this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight; } catch { }
     }
@@ -1127,6 +1136,81 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             documents: true
         };
         this.saveSettings();
+    }
+
+    // --- File Handling Helpers ---
+    getFileExtension(filename: string | undefined): string {
+        if (!filename) return 'FILE';
+        return filename.split('.').pop()?.toUpperCase() || 'FILE';
+    }
+
+    getFileIconClass(filename: string | undefined): string {
+        if (!filename) return 'generic';
+        const ext = filename.split('.').pop()?.toLowerCase();
+        if (!ext) return 'generic';
+
+        if (['pdf'].includes(ext)) return 'pdf';
+        if (['doc', 'docx'].includes(ext)) return 'doc';
+        if (['xls', 'xlsx', 'csv'].includes(ext)) return 'xls';
+        if (['ppt', 'pptx'].includes(ext)) return 'ppt';
+        if (['txt'].includes(ext)) return 'txt';
+        if (['zip', 'rar', '7z'].includes(ext)) return 'zip';
+        return 'generic';
+    }
+
+    openFile(url: string | undefined): void {
+        this.downloadFile(url);
+    }
+
+    async saveAsFile(url: string | undefined, filename: string | undefined) {
+        if (!url) return;
+        const fullUrl = this.getAvatarUrl(url);
+
+        try {
+            // 1. Fetch the file as a blob
+            const response = await fetch(fullUrl);
+            const blob = await response.blob();
+
+            // 2. Try using the modern File System Access API (Chrome/Edge/Opera)
+            // This forces a "Save As" dialog
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: filename || 'download',
+                        types: [{
+                            description: 'File',
+                            accept: { '*/*': ['.' + (filename?.split('.').pop() || 'tmp')] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return; // Success
+                } catch (err: any) {
+                    if (err.name === 'AbortError') return; // User cancelled
+                    console.warn('FilePicker failed, falling back to anchor', err);
+                }
+            }
+
+            // 3. Fallback: Create Object URL
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename || 'download';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+
+        } catch (err) {
+            console.error('Download failed:', err);
+            // 4. Last Resort: Direct Link
+            const a = document.createElement('a');
+            a.href = fullUrl;
+            a.download = filename || 'download';
+            a.target = '_blank';
+            a.click();
+        }
     }
 
     // --- Notification Logic ---

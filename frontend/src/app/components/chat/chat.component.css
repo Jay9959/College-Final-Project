@@ -5109,3 +5109,115 @@
     height: 20px;
     background: rgba(255, 255, 255, 0.1);
 }
+
+/* === Mobile Responsive Styles === */
+@media (max-width: 768px) {
+    /* Layout */
+    .chat-container {
+        position: relative;
+    }
+
+    .sidebar {
+        width: 100%;
+        position: absolute;
+        z-index: 20;
+        height: 100%;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.mobile-hidden {
+        transform: translateX(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .chat-area {
+        width: 100%;
+        position: absolute;
+        z-index: 10;
+        height: 100%;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .chat-area.mobile-show {
+        opacity: 1;
+        transform: translateX(0);
+        z-index: 30;
+    }
+
+    /* Mobile Header */
+    .chat-header {
+        padding: 0 16px;
+        height: 64px;
+    }
+
+    .chat-user-info-group {
+        gap: 8px;
+    }
+
+    /* Make sure back button is visible */
+    .back-btn {
+        display: flex !important;
+        margin-right: 8px;
+    }
+
+    .back-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* Input Area Optimization */
+    .message-input-container {
+        padding: 12px 10px; /* Reduced from 24px 32px */
+    }
+
+    .input-wrapper {
+        padding: 6px 6px 6px 12px;
+        gap: 8px;
+    }
+
+    .message-input-container input {
+        font-size: 15px;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .action-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .send-btn {
+        width: 42px; /* Smaller send button */
+        height: 42px;
+        min-width: 42px; /* Prevent squishing */
+    }
+    
+    .send-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Selection Mode on Mobile */
+    .selection-action-bar {
+        padding: 10px;
+    }
+
+    .selection-info {
+        gap: 8px;
+    }
+
+    .selected-count {
+        font-size: 14px;
+    }
+
+    .selection-action-btn {
+        width: 36px;
+        height: 36px;
+    }
+}

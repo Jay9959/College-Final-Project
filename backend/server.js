@@ -1,8 +1,8 @@
 const express = require('express');
+const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const passport = require('passport');
 const path = require('path');
 require('dotenv').config();
@@ -15,12 +15,15 @@ const socketHandler = require('./socket/socketHandler');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const messageRoutes = require('./routes/messages');
+const groupRoutes = require('./routes/groups');
+const Message = require('./models/Message');
+const Group = require('./models/Group');
 
 const app = express();
 const server = http.createServer(app);
 
 /* =========================
-   DATABASE CONNECT
+   DATABASE
 ========================= */
 connectDB();
 
@@ -28,9 +31,14 @@ connectDB();
    MIDDLEWARE
 ========================= */
 app.use(cors({
-   origin: ['https://college-final-project-1.onrender.com', 'http://localhost:4200', 'http://127.0.0.1:4200'],
-   credentials: true
+  origin: '*', // Allow all origins for debugging/live connectivity
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
+// Preflight support
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -42,42 +50,67 @@ app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 /* =========================
-   API ROUTES
+   ROUTES
 ========================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/groups', groupRoutes);
 
 /* =========================
-   HEALTH CHECK
-========================= */
-app.get('/api/health', (req, res) => {
-   res.status(200).json({ status: 'OK', message: 'Chat server is running' });
-});
-
-/* =========================
-   SOCKET.IO SETUP
+   SOCKET.IO
 ========================= */
 const io = new Server(server, {
-   cors: {
-      origin: ['https://college-final-project-1.onrender.com', 'http://localhost:4200'],
-      methods: ['GET', 'POST'],
-      credentials: true
-   }
+  cors: {
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  }
 });
 
-socketHandler(io);
+let onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+   console.log('New socket connected:', socket.id);
+
+   socket.on('join-user', (userId) => {
+      onlineUsers.set(userId, socket.id);
+      io.emit('online-users', Array.from(onlineUsers.keys()));
+   });
+
+   socket.on('send-message', (data) => {
+      const recipientSocket = onlineUsers.get(data.to);
+      if (recipientSocket) {
+         io.to(recipientSocket).emit('receive-message', data);
+         socket.emit('message-sent', data);
+      }
+   });
+
+   socket.on('disconnect', () => {
+      for (const [userId, id] of onlineUsers.entries()) {
+         if (id === socket.id) {
+            onlineUsers.delete(userId);
+         }
+      }
+      io.emit('online-users', Array.from(onlineUsers.keys()));
+      console.log('Socket disconnected:', socket.id);
+   });
+});
 
 /* =========================
-   ERROR HANDLING
+   FRONTEND STATIC FILES
 ========================= */
-app.use((err, req, res, next) => {
-   console.error(err.stack);
-   res.status(500).json({ message: 'Internal Server Error' });
-});
+const localFrontendPath = path.join(__dirname, '../frontend/dist/chat-frontend');
+const builtFrontendPath = path.join(__dirname, 'dist/chat-frontend');
+const staticPath = fs.existsSync(builtFrontendPath) ? builtFrontendPath : localFrontendPath;
 
-app.use((req, res) => {
-   res.status(404).json({ message: 'Route not found' });
+console.log(`Serving static files from: ${staticPath}`);
+
+app.use(express.static(staticPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(
+    path.join(staticPath, 'index.html')
+  );
 });
 
 /* =========================
@@ -85,7 +118,5 @@ app.use((req, res) => {
 ========================= */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-   console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
-
-module.exports = app;

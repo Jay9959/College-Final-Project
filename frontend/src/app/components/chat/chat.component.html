@@ -2853,30 +2853,17 @@
     </div>
 </div>
 
-<!-- Group Invite QR Modal -->
+<!-- Group Invite Modal -->
 <div class="modal-overlay" *ngIf="showInviteModal" (click)="closeInviteModal()">
     <div class="theme-modal animate-scale-in" style="max-width: 400px; text-align: center;"
         (click)="$event.stopPropagation()">
-        <h2 style="margin-bottom: 10px;">Group QR Code</h2>
-        <p style="color: var(--text-muted); margin-bottom: 25px;">Scan this code to join the group</p>
+        <h2 style="margin-bottom: 20px;">Invite to Group</h2>
+        <p style="color: var(--text-muted); margin-bottom: 25px;">Share this link to invite participants:</p>
 
-        <div style="background: white; padding: 20px; border-radius: 12px; display: inline-block; margin-bottom: 25px;">
-            <!-- Simple SVG Mock QR Code -->
-            <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1">
-                <rect x="2" y="2" width="6" height="6" stroke-width="2" />
-                <rect x="4" y="4" width="2" height="2" fill="#111" />
-                <rect x="16" y="2" width="6" height="6" stroke-width="2" />
-                <rect x="18" y="4" width="2" height="2" fill="#111" />
-                <rect x="2" y="16" width="6" height="6" stroke-width="2" />
-                <rect x="4" y="18" width="2" height="2" fill="#111" />
-                <rect x="10" y="2" width="2" height="2" fill="#111" />
-                <rect x="14" y="6" width="2" height="2" fill="#111" />
-                <rect x="10" y="10" width="4" height="4" fill="#111" />
-                <rect x="18" y="10" width="2" height="2" fill="#111" />
-                <rect x="10" y="18" width="2" height="2" fill="#111" />
-                <rect x="16" y="16" width="2" height="2" fill="#111" />
-                <rect x="20" y="20" width="2" height="2" fill="#111" />
-            </svg>
+        <!-- QR Code -->
+        <div style="background: white; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 25px;">
+            <img [src]="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + groupInviteLink"
+                alt="Group Invite QR Code" style="width: 150px; height: 150px;">
         </div>
 
         <div
@@ -2888,7 +2875,7 @@
                 style="background: var(--accent-primary); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">Copy</button>
         </div>
 
-        <button class="ok-btn" (click)="closeInviteModal()" style="width: 100%;">Close</button>
+        <button class="ok-btn" (click)="closeInviteModal()" style="width: 100%;">Done</button>
     </div>
 </div>
 

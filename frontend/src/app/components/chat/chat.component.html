@@ -116,28 +116,28 @@
                         </svg>
                     </button>
 
-                    <div class="chat-user-avatar" [class.group-avatar]="selectedUser?.isGroup"
-                        (click)="selectedUser?.isGroup ? openGroupInfo() : openContactInfo()" style="cursor: pointer;">
-                        <img *ngIf="selectedUser?.avatar"
-                            [src]="(selectedUser?.isGroup && selectedUser?.avatar?.startsWith('data:')) ? selectedUser?.avatar : getAvatarUrl(selectedUser?.avatar)"
+                    <div class="chat-user-avatar" [class.group-avatar]="selectedUser.isGroup"
+                        (click)="selectedUser.isGroup ? openGroupInfo() : openContactInfo()" style="cursor: pointer;">
+                        <img *ngIf="selectedUser.avatar"
+                            [src]="(selectedUser.isGroup && selectedUser.avatar && selectedUser.avatar.startsWith('data:')) ? selectedUser.avatar : getAvatarUrl(selectedUser.avatar)"
                             style="width:100%; height:100%; border-radius:14px; object-fit:cover;"
                             (error)="handleImageError($event)">
 
-                        <div class="avatar-fallback" [style.display]="selectedUser?.avatar ? 'none' : 'flex'"
+                        <div class="avatar-fallback" [style.display]="selectedUser.avatar ? 'none' : 'flex'"
                             style="width: 100%; height: 100%; align-items: center; justify-content: center;">
-                            <svg *ngIf="selectedUser?.isGroup" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            <svg *ngIf="selectedUser.isGroup" width="24" height="24" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="9" cy="7" r="4"></circle>
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            <span *ngIf="!selectedUser?.isGroup">{{ (selectedUser?.username ||
+                            <span *ngIf="!selectedUser.isGroup">{{ (selectedUser.username ||
                                 '').charAt(0).toUpperCase() }}</span>
                         </div>
                     </div>
 
-                    <div class="chat-user-text" (click)="selectedUser?.isGroup ? openGroupInfo() : openContactInfo()"
+                    <div class="chat-user-text" (click)="selectedUser.isGroup ? openGroupInfo() : openContactInfo()"
                         style="cursor: pointer;">
                         <div class="chat-user-name">
                             {{ selectedUser.fullName || selectedUser.username }}
@@ -150,7 +150,7 @@
                             </svg>
                         </div>
                         <div class="chat-user-status">
-                            <ng-container *ngIf="!selectedUser?.isGroup">
+                            <ng-container *ngIf="!selectedUser.isGroup">
                                 <span *ngIf="selectedUser && typingUsers[selectedUser._id]"
                                     class="typing-indicator">typing...</span>
                                 <span
@@ -160,7 +160,7 @@
                                 <span
                                     *ngIf="selectedUser && !typingUsers[selectedUser._id] && !isUserOnline(selectedUser._id)">Offline</span>
                             </ng-container>
-                            <ng-container *ngIf="selectedUser?.isGroup">
+                            <ng-container *ngIf="selectedUser.isGroup">
                                 <span>Group</span>
                             </ng-container>
                         </div>

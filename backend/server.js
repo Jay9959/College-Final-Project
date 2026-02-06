@@ -103,6 +103,16 @@ io.on('connection', (socket) => {
   });
 });
 
+app.use(express.static(
+  path.join(__dirname, 'dist/chat-frontend')
+));
+
+app.get('*', (req, res) => {
+  res.sendFile(
+    path.join(__dirname, 'dist/chat-frontend/index.html')
+  );
+});
+
 /* =========================
    START SERVER
 ========================= */

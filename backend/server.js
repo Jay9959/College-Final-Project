@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
@@ -151,13 +152,20 @@ io.on('connection', (socket) => {
   });
 });
 
-app.use(express.static(
-  path.join(__dirname, 'dist/chat-frontend')
-));
+/* =========================
+   FRONTEND STATIC FILES
+========================= */
+const localFrontendPath = path.join(__dirname, '../frontend/dist/chat-frontend');
+const builtFrontendPath = path.join(__dirname, 'dist/chat-frontend');
+const staticPath = fs.existsSync(builtFrontendPath) ? builtFrontendPath : localFrontendPath;
+
+console.log(`Serving static files from: ${staticPath}`);
+
+app.use(express.static(staticPath));
 
 app.get('*', (req, res) => {
   res.sendFile(
-    path.join(__dirname, 'dist/chat-frontend/index.html')
+    path.join(staticPath, 'index.html')
   );
 });
 

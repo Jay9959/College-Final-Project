@@ -73,6 +73,10 @@
                     <div class="user-status">{{ user.isGroup ? 'Group' : (isUserOnline(user._id) ? 'Online' : 'Offline')
                         }}</div>
                 </div>
+                <!-- Unread Message Count Badge -->
+                <div class="unread-badge" *ngIf="user.unreadCount && user.unreadCount > 0">
+                    {{ user.unreadCount > 99 ? '99+' : user.unreadCount }}
+                </div>
             </div>
             <div *ngIf="users.length === 0" class="no-users">
                 <p>No users found</p>

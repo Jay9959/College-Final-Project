@@ -380,6 +380,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.selectedUser = user;
         // Persist selected user ID for page refresh
         sessionStorage.setItem('selectedUserId', user._id);
+        // Clear unread count for this user
+        user.unreadCount = 0;
         this.loadMessages(user._id);
         this.markMessagesAsRead(user._id);
     }
@@ -437,6 +439,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                     this.cdr.detectChanges();
                 } else {
                     // Message from someone else (or not in chat)
+                    // Increment unread count for this sender
+                    const sender = this.users.find(u => u._id === msg.sender._id);
+                    if (sender) {
+                        sender.unreadCount = (sender.unreadCount || 0) + 1;
+                    }
                     this.handleIncomingNotification(msg);
                 }
             }),

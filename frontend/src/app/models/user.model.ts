@@ -10,6 +10,7 @@ export interface User {
     token?: string;
     isGroup?: boolean;
     participants?: string[];
+    unreadCount?: number;
 }
 
 export interface AuthResponse {

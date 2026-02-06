@@ -14,6 +14,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const messageRoutes = require('./routes/messages');
 const groupRoutes = require('./routes/groups');
+const Message = require('./models/Message');
+const Group = require('./models/Group');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,10 +29,7 @@ connectDB();
    MIDDLEWARE
 ========================= */
 app.use(cors({
-  origin: [
-    'https://college-final-project-1.onrender.com',
-    'http://localhost:4200'
-  ],
+  origin: '*', // Allow all origins for debugging/live connectivity
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -61,10 +60,7 @@ app.use('/api/groups', groupRoutes);
 ========================= */
 const io = new Server(server, {
   cors: {
-    origin: [
-      'https://college-final-project-1.onrender.com',
-      'http://localhost:4200'
-    ],
+    origin: '*', // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   }
 });
@@ -83,15 +79,67 @@ io.on('connection', (socket) => {
     socket.join(groupId);
   });
 
-  socket.on('send-message', (data) => {
-    const receiverSocket = onlineUsers.get(data.to);
-    if (receiverSocket) {
-      io.to(receiverSocket).emit('receive-message', data);
+  socket.on('send-message', async (data) => {
+    try {
+      // Save message to MongoDB
+      const newMessage = new Message({
+        sender: data.sender,
+        receiver: data.to,
+        content: data.content,
+        messageType: data.messageType || 'text',
+        fileUrl: data.fileUrl,
+        fileName: data.fileName,
+        mimeType: data.mimeType
+      });
+
+      const savedMessage = await newMessage.save();
+
+      // Populate sender and receiver info
+      await savedMessage.populate('sender', 'username avatar');
+      await savedMessage.populate('receiver', 'username avatar');
+
+      const receiverSocket = onlineUsers.get(data.to);
+
+      // Emit to receiver if online
+      if (receiverSocket) {
+        io.to(receiverSocket).emit('receive-message', savedMessage);
+      }
+
+      // Also emit back to sender (ack) or useful if they have multiple tabs
+      // socket.emit('message-sent', savedMessage); 
+    } catch (error) {
+      console.error('Socket send-message error:', error);
     }
   });
 
-  socket.on('send-group-message', (data) => {
-    socket.to(data.group).emit('receive-group-message', data);
+  socket.on('send-group-message', async (data) => {
+    try {
+      const newMessage = new Message({
+        sender: data.sender,
+        group: data.group,
+        content: data.content,
+        messageType: data.messageType || 'text',
+        fileUrl: data.fileUrl,
+        fileName: data.fileName,
+        mimeType: data.mimeType
+      });
+
+      const savedMessage = await newMessage.save();
+
+      // Populate sender and group info
+      await savedMessage.populate('sender', 'username avatar');
+      await savedMessage.populate('group');
+
+      // Update Group last message
+      await Group.findByIdAndUpdate(data.group, {
+        lastMessage: savedMessage._id,
+        lastMessageAt: new Date()
+      });
+
+      socket.to(data.group).emit('receive-group-message', savedMessage);
+    } catch (error) {
+      console.error('Socket send-group-message error:', error);
+    }
   });
 
   socket.on('disconnect', () => {

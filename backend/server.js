@@ -6,14 +6,14 @@ const passport = require('passport');
 const path = require('path');
 require('dotenv').config();
 
-const connectDB = require('../config/db');
-require('../config/passport');
+const connectDB = require('./config/db');
+require('./config/passport');
 
 // Routes
-const authRoutes = require('../routes/auth');
-const userRoutes = require('../routes/users');
-const messageRoutes = require('../routes/messages');
-const groupRoutes = require('../routes/groups');
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+const messageRoutes = require('./routes/messages');
+const groupRoutes = require('./routes/groups');
 
 const app = express();
 const server = http.createServer(app);

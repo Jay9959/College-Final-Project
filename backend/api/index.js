@@ -6,6 +6,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const passport = require('passport');
 require('../config/passport');
+const socketHandler = require('../socket/socketHandler');
 
 // --- Routes import
 const authRoutes = require('../routes/auth');       // auth routes
@@ -52,38 +53,8 @@ const io = new Server(server, {
     }
 });
 
-// --- 6️⃣ Socket.IO online users
-let onlineUsers = new Map();
-
-io.on('connection', (socket) => {
-    console.log('New socket connected:', socket.id);
-
-    // Add user to online map
-    socket.on('join-user', (userId) => {
-        onlineUsers.set(userId, socket.id);
-        io.emit('online-users', Array.from(onlineUsers.keys()));
-    });
-
-    // Send message
-    socket.on('send-message', (data) => {
-        const recipientSocket = onlineUsers.get(data.to);
-        if (recipientSocket) {
-            io.to(recipientSocket).emit('receive-message', data);
-            socket.emit('message-sent', data);
-        }
-    });
-
-    // Disconnect
-    socket.on('disconnect', () => {
-        for (const [userId, id] of onlineUsers.entries()) {
-            if (id === socket.id) {
-                onlineUsers.delete(userId);
-            }
-        }
-        io.emit('online-users', Array.from(onlineUsers.keys()));
-        console.log('Socket disconnected:', socket.id);
-    });
-});
+// --- 6️⃣ Socket.IO Setup with Handler
+socketHandler(io);
 
 // --- 7️⃣ Start server
 const PORT = process.env.PORT || 5000;

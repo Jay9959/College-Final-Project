@@ -150,9 +150,34 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     showPermissionModal = false;
     permissionMessage = '';
 
+    // --- Reply State ---
+    replyingToMessage: Message | null = null;
+
+    // --- Context Menu State ---
+    showContextMenu = false;
+    contextMenuPosition = { x: 0, y: 0 };
+    contextMenuMessage: Message | null = null;
+    reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+    // --- Full Emoji Picker State (for context menu) ---
+    emojiPickerMessage: Message | null = null;
+
     private typingTimeout: any;
     private subscriptions: Subscription[] = [];
     private shouldScrollToBottom = false;
+
+    // --- Contact Info State ---
+    showContactInfo = false;
+
+    // --- Custom Confirm Modal State ---
+    showConfirmModal = false;
+    confirmTitle = '';
+    confirmMessage = '';
+    confirmAction: () => void = () => { };
+
+    // --- Message Info Modal State ---
+    showMessageInfoModal = false;
+    selectedMessageInfo: Message | null = null;
 
     constructor(
         private authService: AuthService,
@@ -160,7 +185,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         private chatService: ChatService,
         private themeService: ThemeService,
         private router: Router,
-        private toastService: ToastService,
+        public toastService: ToastService,
         private cdr: ChangeDetectorRef
     ) {
         this.currentTheme = this.themeService.getTheme();
@@ -412,6 +437,19 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
                 const msg = this.messages.find(m => m._id === data.messageId);
                 if (msg) { msg.delivered = true; msg.deliveredAt = data.deliveredAt; }
                 this.cdr.detectChanges();
+            }),
+            this.socketService.onMessageReaction().subscribe(data => {
+                const msg = this.messages.find(m => m._id === data.messageId);
+                if (msg) {
+                    if (!msg.reactions) msg.reactions = [];
+                    const exist = msg.reactions.findIndex(r => r.userId === data.userId);
+                    if (exist > -1) {
+                        msg.reactions[exist].emoji = data.emoji;
+                    } else {
+                        msg.reactions.push({ emoji: data.emoji, userId: data.userId });
+                    }
+                    this.cdr.detectChanges();
+                }
             })
         );
     }
@@ -438,17 +476,42 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
         this.messages.push(tempMessage);
         this.shouldScrollToBottom = true;
+
+        // Store current reply for socket call
+        const replyToId = this.replyingToMessage?._id;
+
         this.newMessage = '';
+        this.replyingToMessage = null; // Clear reply bar after sending
         this.cdr.detectChanges(); // Force update view
 
         // Send to server
         this.socketService.sendMessage({
             senderId: this.currentUser._id,
             receiverId: this.selectedUser._id,
-            content: content
+            content: content,
+            replyToId: replyToId
         });
 
         this.socketService.sendTyping({ senderId: this.currentUser._id, receiverId: this.selectedUser._id, isTyping: false });
+    }
+
+    setReply(message: Message): void {
+        this.replyingToMessage = message;
+    }
+
+    cancelReply(): void {
+        this.replyingToMessage = null;
+    }
+
+    scrollToMessage(messageId: string): void {
+        const element = document.getElementById('msg-' + messageId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-message');
+            setTimeout(() => {
+                element.classList.remove('highlight-message');
+            }, 2000);
+        }
     }
 
     onTyping(): void {
@@ -745,7 +808,27 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     ];
 
     toggleEmojiPicker(): void {
+        // When triggered from context menu, save the message for reaction
+        if (this.contextMenuMessage) {
+            this.emojiPickerMessage = this.contextMenuMessage;
+        }
         this.showEmojiPicker = !this.showEmojiPicker;
+    }
+
+    closeEmojiPickerModal(): void {
+        this.showEmojiPicker = false;
+        this.emojiPickerMessage = null;
+    }
+
+    selectEmojiForReaction(emoji: string): void {
+        if (this.emojiPickerMessage) {
+            this.reactToMessage(emoji, this.emojiPickerMessage);
+            this.closeEmojiPickerModal();
+        } else {
+            // Normal emoji picker - add to message
+            this.newMessage += emoji;
+            this.showEmojiPicker = false;
+        }
     }
 
     addEmoji(emoji: string): void {
@@ -1713,15 +1796,15 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (this.selectedMessages.size === 0) return;
 
         const count = this.selectedMessages.size;
-        if (confirm(`Delete ${count} message(s)?`)) {
-            // Remove from local messages array
+        this.confirmTitle = 'Delete Messages?';
+        this.confirmMessage = `Are you sure you want to delete ${count} selected message(s)? This action cannot be undone.`;
+        this.confirmAction = () => {
             this.messages = this.messages.filter(m => !this.selectedMessages.has(m._id));
             this.toastService.show(`${count} message(s) deleted`);
             this.cancelSelectMode();
             this.cdr.detectChanges();
-
-            // TODO: Also delete from server/database
-        }
+        };
+        this.showConfirmModal = true;
     }
 
     // --- Poll Creation ---
@@ -1931,6 +2014,139 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.toastService.show(`Forwarded ${messagesToForward.length} message(s) to ${user.fullName || user.username}`);
     }
 
+    // --- Context Menu & Reactions ---
+    onMessageContextMenu(event: MouseEvent, message: Message): void {
+        event.preventDefault();
+        this.contextMenuMessage = message;
+
+        // Improved positioning with edge detection
+        const menuWidth = 240;
+        const menuHeight = 400; // Estimated max height
+        const margin = 10;
+
+        let x = event.clientX;
+        let y = event.clientY;
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        // Check right edge
+        if (x + menuWidth + margin > windowWidth) {
+            x = windowWidth - menuWidth - margin;
+        }
+
+        // Check bottom edge
+        if (y + menuHeight + margin > windowHeight) {
+            y = windowHeight - menuHeight - margin;
+        }
+
+        this.contextMenuPosition = { x, y };
+        this.showContextMenu = true;
+
+        // Add listener to close menu on click anywhere else
+        const closeMenu = () => {
+            this.closeContextMenu();
+            document.removeEventListener('click', closeMenu);
+        };
+        setTimeout(() => document.addEventListener('click', closeMenu), 10);
+    }
+
+    closeContextMenu(): void {
+        this.showContextMenu = false;
+        this.contextMenuMessage = null;
+    }
+
+    reactToMessage(emoji: string, message: Message): void {
+        if (!this.currentUser) return;
+
+        if (!message.reactions) message.reactions = [];
+
+        const existingIndex = message.reactions.findIndex(r => r.userId === this.currentUser!._id);
+
+        if (existingIndex > -1) {
+            if (message.reactions[existingIndex].emoji === emoji) {
+                // Toggle off if same emoji
+                message.reactions.splice(existingIndex, 1);
+            } else {
+                // Update if different emoji
+                message.reactions[existingIndex].emoji = emoji;
+            }
+        } else {
+            message.reactions.push({ emoji, userId: this.currentUser._id });
+        }
+
+        // Send via socket
+        this.socketService.sendReaction({
+            messageId: message._id,
+            emoji: emoji,
+            userId: this.currentUser._id,
+            receiverId: this.selectedUser!._id
+        });
+
+        this.closeContextMenu();
+        this.cdr.detectChanges();
+    }
+
+    copyMessageText(message: Message): void {
+        if (!message.content) return;
+        navigator.clipboard.writeText(message.content).then(() => {
+            this.toastService.show('Message copied!');
+        });
+        this.closeContextMenu();
+    }
+
+    deleteMessage(message: Message): void {
+        this.confirmTitle = 'Delete Message?';
+        this.confirmMessage = 'Are you sure you want to delete this message? This action cannot be undone.';
+        this.confirmAction = () => {
+            this.messages = this.messages.filter(m => m._id !== message._id);
+            this.toastService.show('Message deleted');
+        };
+        this.showConfirmModal = true;
+        this.closeContextMenu();
+    }
+
+    closeConfirmModal(): void {
+        this.showConfirmModal = false;
+    }
+
+    executeConfirmAction(): void {
+        this.confirmAction();
+        this.closeConfirmModal();
+    }
+
+    forwardMessage(message: Message): void {
+        this.selectedMessages.clear();
+        this.selectedMessages.add(message._id);
+        this.openForwardModal();
+        this.closeContextMenu();
+    }
+
+    starMessage(message: Message): void {
+        message.isStarred = !message.isStarred;
+        this.toastService.show(message.isStarred ? 'Message starred' : 'Message unstarred');
+        // TODO: Persist to backend
+        this.closeContextMenu();
+    }
+
+    pinMessage(message: Message): void {
+        message.isPinned = !message.isPinned;
+        this.toastService.show(message.isPinned ? 'Message pinned' : 'Message unpinned');
+        // TODO: Persist to backend
+        this.closeContextMenu();
+    }
+
+    viewMessageInfo(message: Message): void {
+        this.selectedMessageInfo = message;
+        this.showMessageInfoModal = true;
+        this.closeContextMenu();
+    }
+
+    closeMessageInfoModal(): void {
+        this.showMessageInfoModal = false;
+        this.selectedMessageInfo = null;
+    }
+
     handleImageError(event: any): void {
         event.target.style.display = 'none';
         const parent = event.target.parentElement;
@@ -1941,4 +2157,19 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             }
         }
     }
+
+    // --- Contact Info Methods ---
+    openContactInfo(): void {
+        this.showContactInfo = true;
+    }
+
+    closeContactInfo(): void {
+        this.showContactInfo = false;
+    }
+
+    blockUser(): void {
+        this.toastService.show(`Blocked ${this.selectedUser?.fullName || this.selectedUser?.username}`);
+        this.closeContactInfo();
+    }
+
 }

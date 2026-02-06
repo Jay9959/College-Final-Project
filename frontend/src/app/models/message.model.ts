@@ -19,10 +19,14 @@ export interface Message {
     seenAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    replyTo?: Message;
     // Frontend only props
     uploadProgress?: number;
     localId?: string;
     isManuallyDownloaded?: boolean;
+    reactions?: { emoji: string; userId: string }[];
+    isStarred?: boolean;
+    isPinned?: boolean;
 }
 
 export interface SendMessageData {
@@ -31,6 +35,7 @@ export interface SendMessageData {
     content?: string;
     fileUrl?: string;
     messageType?: 'text' | 'image' | 'file' | 'audio' | 'video' | 'call_log' | 'poll';
+    replyToId?: string;
 }
 
 export interface TypingData {

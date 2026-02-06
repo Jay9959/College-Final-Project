@@ -45,6 +45,11 @@ const messageSchema = new mongoose.Schema({
     },
     seenAt: {
         type: Date
+    },
+    replyTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Message',
+        default: null
     }
 }, {
     timestamps: true

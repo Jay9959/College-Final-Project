@@ -39,7 +39,7 @@ const socketHandler = (io) => {
         // Handle sending messages
         socket.on('send-message', async (data) => {
             try {
-                const { senderId, receiverId, content, messageType = 'text', fileUrl } = data;
+                const { senderId, receiverId, content, messageType = 'text', fileUrl, replyToId } = data;
 
                 // Save message to database
                 const message = await Message.create({
@@ -47,12 +47,20 @@ const socketHandler = (io) => {
                     receiver: receiverId,
                     content,
                     messageType,
-                    fileUrl
+                    fileUrl,
+                    replyTo: replyToId || null
                 });
 
                 // Populate sender and receiver info
                 await message.populate('sender', 'username avatar');
                 await message.populate('receiver', 'username avatar');
+
+                if (message.replyTo) {
+                    await message.populate({
+                        path: 'replyTo',
+                        populate: { path: 'sender', select: 'username avatar fullName' }
+                    });
+                }
 
                 // Check if receiver is online
                 const receiverSocketId = onlineUsers.get(receiverId);
@@ -120,6 +128,26 @@ const socketHandler = (io) => {
                 }
             } catch (error) {
                 console.error('Message seen error:', error);
+            }
+        });
+
+        // Handle message reactions
+        socket.on('message-reaction', async (data) => {
+            try {
+                const { messageId, emoji, userId, receiverId } = data;
+
+                // TODO: Update in database if needed
+                // For now, just broadcast to the receiver
+                const receiverSocketId = onlineUsers.get(receiverId);
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit('receive-reaction', {
+                        messageId,
+                        emoji,
+                        userId
+                    });
+                }
+            } catch (error) {
+                console.error('Message reaction error:', error);
             }
         });
 

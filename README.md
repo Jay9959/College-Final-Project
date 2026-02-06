@@ -112,7 +112,7 @@ Frontend will run on: `http://192.168.1.147:4200`
 Backend `.env` file:
 ```
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/chatapp
+MONGO_URI=mongodb://localhost:27017/chatapp
 JWT_SECRET=your_super_secret_jwt_key_change_in_production
 JWT_EXPIRES_IN=7d
 ```

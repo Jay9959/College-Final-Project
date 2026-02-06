@@ -108,6 +108,18 @@ export class SocketService {
         });
     }
 
+    sendReaction(data: { messageId: string, emoji: string, userId: string, receiverId: string }): void {
+        this.socket?.emit('message-reaction', data);
+    }
+
+    onMessageReaction(): Observable<{ messageId: string, emoji: string, userId: string }> {
+        return new Observable(observer => {
+            this.socket?.on('receive-reaction', (data) => {
+                observer.next(data);
+            });
+        });
+    }
+
     // --- Call Signaling Methods ---
 
     callUser(data: { userToCall: string; signalData: any; from: string; name: string; callType: 'video' | 'audio' }): void {

@@ -117,8 +117,7 @@
                     </button>
 
                     <div class="chat-user-avatar" [class.group-avatar]="selectedUser?.isGroup"
-                        (click)="selectedUser?.isGroup && openGroupInfo()"
-                        [style.cursor]="selectedUser?.isGroup ? 'pointer' : 'default'">
+                        (click)="selectedUser?.isGroup ? openGroupInfo() : openContactInfo()" style="cursor: pointer;">
                         <img *ngIf="selectedUser?.avatar"
                             [src]="(selectedUser?.isGroup && selectedUser?.avatar?.startsWith('data:')) ? selectedUser?.avatar : getAvatarUrl(selectedUser?.avatar)"
                             style="width:100%; height:100%; border-radius:14px; object-fit:cover;"
@@ -138,10 +137,10 @@
                         </div>
                     </div>
 
-                    <div class="chat-user-text" (click)="selectedUser?.isGroup && openGroupInfo()"
-                        [style.cursor]="selectedUser?.isGroup ? 'pointer' : 'default'">
+                    <div class="chat-user-text" (click)="selectedUser?.isGroup ? openGroupInfo() : openContactInfo()"
+                        style="cursor: pointer;">
                         <div class="chat-user-name">
-                            {{ selectedUser?.fullName || selectedUser?.username }}
+                            {{ selectedUser.fullName || selectedUser.username }}
                             <svg *ngIf="selectedUser && mutedChats.has(selectedUser._id)" width="14" height="14"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 style="margin-left: 5px; opacity: 0.6; display: inline-block; vertical-align: middle;">
@@ -362,11 +361,12 @@
             <app-call-modal #callModal [currentUser]="currentUser"></app-call-modal>
 
             <div class="messages-container" #messagesContainer>
-                <div *ngFor="let message of messages; let i = index" class="message"
+                <div *ngFor="let message of messages; let i = index" class="message" [id]="'msg-' + message._id"
                     [class.sent]="message.sender._id === currentUser?._id"
                     [class.received]="message.sender._id !== currentUser?._id" [class.selecting]="isSelectMode"
                     [class.selected]="selectedMessages.has(message._id)"
-                    (click)="isSelectMode && toggleMessageSelection(message)">
+                    (click)="isSelectMode && toggleMessageSelection(message)"
+                    (contextmenu)="onMessageContextMenu($event, message)">
 
                     <!-- Selection Checkbox -->
                     <div class="selection-checkbox" *ngIf="isSelectMode">
@@ -379,6 +379,25 @@
                     </div>
 
                     <div class="message-bubble">
+                        <!-- Reply Context (Quoted Message) -->
+                        <div class="quoted-message" *ngIf="message.replyTo"
+                            (click)="scrollToMessage(message.replyTo._id)">
+                            <div class="quoted-sender"
+                                [style.color]="message.replyTo.sender._id === currentUser?._id ? '#00a884' : '#53bdeb'">
+                                {{ message.replyTo.sender._id === currentUser?._id ? 'You' :
+                                message.replyTo.sender.username }}
+                            </div>
+                            <div class="quoted-text">{{ message.replyTo.content || 'Media' }}</div>
+                        </div>
+
+                        <!-- Reply Action Button (Hover) -->
+                        <button class="message-reply-btn" (click)="setReply(message)" title="Reply">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="9 17 4 12 9 7"></polyline>
+                                <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                            </svg>
+                        </button>
                         <!-- Text Message -->
                         <p *ngIf="message.messageType === 'text' || !message.messageType" class="message-text">{{
                             message.content }}</p>
@@ -523,6 +542,17 @@
                         </div>
 
                         <div class="message-meta">
+                            <svg *ngIf="message.isPinned" class="meta-icon pin" width="10" height="10"
+                                viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px; opacity: 0.6;">
+                                <path d="M5 17h14v-2c0-3.3-2.7-6-6-6V3.5h-4V9c-3.3 0-6 2.7-6 6v2z"></path>
+                            </svg>
+                            <svg *ngIf="message.isStarred" class="meta-icon star" width="10" height="10"
+                                viewBox="0 0 24 24" fill="currentColor"
+                                style="margin-right: 4px; opacity: 0.6; color: #ffbc00;">
+                                <polygon
+                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                </polygon>
+                            </svg>
                             <span class="message-time">{{ formatTime(message.createdAt) }}</span>
                             <span *ngIf="message.sender._id === currentUser?._id && !message.uploadProgress"
                                 class="message-status">
@@ -530,6 +560,13 @@
                                 <span *ngIf="!message.seen && message.delivered" class="tick delivered">✓✓</span>
                                 <span *ngIf="!message.seen && !message.delivered" class="tick">✓</span>
                             </span>
+                        </div>
+
+                        <!-- Reactions Display -->
+                        <div class="message-reactions" *ngIf="message.reactions && message.reactions.length > 0">
+                            <span class="reaction-item">{{ message.reactions[0].emoji }}</span>
+                            <span class="reaction-count" *ngIf="message.reactions.length > 1">{{
+                                message.reactions.length }}</span>
                         </div>
 
                         <!-- Upload Progress Overlay -->
@@ -592,6 +629,23 @@
             </div>
 
             <div class="message-input-container" *ngIf="!isSelectMode">
+                <!-- Reply Bar -->
+                <div class="reply-preview-bar" *ngIf="replyingToMessage">
+                    <div class="reply-indicator"></div>
+                    <div class="reply-content">
+                        <div class="reply-sender">{{ replyingToMessage.sender._id === currentUser?._id ? 'You' :
+                            replyingToMessage.sender.username }}</div>
+                        <div class="reply-text">{{ replyingToMessage.content || 'Media' }}</div>
+                    </div>
+                    <button class="reply-close" (click)="cancelReply()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
                 <!-- Emoji Picker -->
                 <div *ngIf="showEmojiPicker" class="emoji-picker">
                     <span *ngFor="let emoji of emojis" (click)="addEmoji(emoji)">{{ emoji }}</span>
@@ -2608,8 +2662,8 @@
 </div>
 
 <!-- Group Info Modal -->
-<div class="modal-overlay" *ngIf="showGroupInfo" (click)="closeGroupInfo()">
-    <div class="group-info-modal animate-slide-in-right" (click)="$event.stopPropagation()">
+<div class="modal-overlay sidebar-overlay" *ngIf="showGroupInfo" (click)="closeGroupInfo()">
+    <div class="sidebar-panel animate-slide-in-right" (click)="$event.stopPropagation()">
         <div class="group-info-header">
             <button class="close-btn" (click)="closeGroupInfo()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2835,5 +2889,242 @@
         </div>
 
         <button class="ok-btn" (click)="closeInviteModal()" style="width: 100%;">Close</button>
+    </div>
+</div>
+
+<!-- Message Context Menu -->
+<div class="msg-context-menu" *ngIf="showContextMenu" [style.left.px]="contextMenuPosition.x"
+    [style.top.px]="contextMenuPosition.y" (click)="$event.stopPropagation()">
+
+    <!-- Emoji Reactions Row -->
+    <div class="reactions-row">
+        <button *ngFor="let emoji of reactionEmojis" (click)="reactToMessage(emoji, contextMenuMessage!)"
+            class="reaction-btn">
+            {{ emoji }}
+        </button>
+        <button class="reaction-btn more-btn" (click)="toggleEmojiPicker(); closeContextMenu()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </button>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-item" (click)="viewMessageInfo(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>Message info</span>
+    </div>
+
+    <div class="menu-item" (click)="setReply(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 17 4 12 9 7"></polyline>
+            <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+        </svg>
+        <span>Reply</span>
+    </div>
+
+    <div class="menu-item" (click)="copyMessageText(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span>Copy</span>
+    </div>
+
+    <div class="menu-item" (click)="forwardMessage(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 17 20 12 15 7"></polyline>
+            <path d="M4 18v-2a4 4 0 0 1 4-4h12"></path>
+        </svg>
+        <span>Forward</span>
+    </div>
+
+    <div class="menu-item" (click)="starMessage(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+            </polygon>
+        </svg>
+        <span>{{ contextMenuMessage?.isStarred ? 'Unstar' : 'Star' }}</span>
+    </div>
+
+    <div class="menu-item" (click)="pinMessage(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-2c0-3.3-2.7-6-6-6V3.5h-4V9c-3.3 0-6 2.7-6 6v2z"></path>
+        </svg>
+        <span>{{ contextMenuMessage?.isPinned ? 'Unpin' : 'Pin' }}</span>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-item" (click)="enableSelectMode()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <polyline points="9 11 12 14 22 4"></polyline>
+        </svg>
+        <span>Select</span>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-item delete-item" (click)="deleteMessage(contextMenuMessage!)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        <span>Delete</span>
+    </div>
+</div>
+
+<!-- Full Emoji Picker Modal (for reactions) -->
+<div class="modal-overlay emoji-picker-overlay" *ngIf="showEmojiPicker && emojiPickerMessage"
+    (click)="closeEmojiPickerModal()">
+    <div class="emoji-picker-modal animate-scale-in" (click)="$event.stopPropagation()">
+        <div class="emoji-picker-header">
+            <h3>Select Emoji</h3>
+            <button class="close-btn" (click)="closeEmojiPickerModal()">×</button>
+        </div>
+        <div class="emoji-picker-content">
+            <div class="emoji-grid">
+                <button *ngFor="let emoji of emojis" class="emoji-btn" (click)="selectEmojiForReaction(emoji)">
+                    {{ emoji }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Confirm Modal -->
+<div class="modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+    <div class="theme-modal animate-scale-in confirm-modal" (click)="$event.stopPropagation()">
+        <h2 class="modal-title">{{ confirmTitle }}</h2>
+        <p class="modal-message">{{ confirmMessage }}</p>
+        <div class="modal-actions">
+            <button class="cancel-btn-outline" (click)="closeConfirmModal()">Cancel</button>
+            <button class="ok-btn delete-btn" (click)="executeConfirmAction()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Message Info Modal -->
+<div class="modal-overlay" *ngIf="showMessageInfoModal" (click)="closeMessageInfoModal()">
+    <div class="theme-modal animate-scale-in info-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2 style="margin: 0;">Message Info</h2>
+            <button class="close-btn" (click)="closeMessageInfoModal()">×</button>
+        </div>
+        <div class="info-body" *ngIf="selectedMessageInfo">
+            <div class="info-row">
+                <span class="label">Sent:</span>
+                <span class="value">{{ selectedMessageInfo.createdAt | date:"MMM d, y, h:mm a" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Status:</span>
+                <span class="value status" [class.read]="selectedMessageInfo.seen">
+                    {{ selectedMessageInfo.seen ? "Read" : (selectedMessageInfo.delivered ? "Delivered" : "Sent") }}
+                </span>
+            </div>
+            <div class="info-row" *ngIf="selectedMessageInfo.seenAt">
+                <span class="label">Read at:</span>
+                <span class="value">{{ selectedMessageInfo.seenAt | date:"MMM d, y, h:mm a" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Message Type:</span>
+                <span class="value" style="text-transform: capitalize;">{{ selectedMessageInfo.messageType }}</span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="ok-btn" (click)="closeMessageInfoModal()" style="width: 100%;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Info Modal -->
+<div class="modal-overlay sidebar-overlay" *ngIf="showContactInfo" (click)="closeContactInfo()">
+    <div class="sidebar-panel animate-slide-in-right" (click)="$event.stopPropagation()">
+        <div class="group-info-header">
+            <button class="close-btn" (click)="closeContactInfo()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <div class="header-titles">
+                <h3>Contact info</h3>
+            </div>
+        </div>
+
+        <div class="group-info-content">
+            <div class="group-info-main">
+                <div class="group-large-avatar contact-large-avatar">
+                    <img *ngIf="selectedUser?.avatar" [src]="getAvatarUrl(selectedUser?.avatar)">
+                    <div *ngIf="!selectedUser?.avatar" class="avatar-placeholder">
+                        {{ (selectedUser?.username || '').charAt(0).toUpperCase() }}
+                    </div>
+                </div>
+                <h2>{{ selectedUser?.fullName || selectedUser?.username }}</h2>
+                <span class="group-status-text" [class.online]="selectedUser?.isOnline">{{ selectedUser?.isOnline ?
+                    'Online' : 'Offline' }}</span>
+
+                <!-- Quick Actions like in image -->
+                <div class="contact-quick-actions">
+                    <div class="q-action ripple" (click)="toastService.show('Search feature coming soon')">
+                        <div class="q-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                        <span>Search</span>
+                    </div>
+                    <div class="q-action ripple" (click)="onVideoCall(); closeContactInfo()">
+                        <div class="q-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <path d="M23 7l-7 5 7 5V7z"></path>
+                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                            </svg>
+                        </div>
+                        <span>Video</span>
+                    </div>
+                    <div class="q-action ripple" (click)="onVoiceCall(); closeContactInfo()">
+                        <div class="q-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e"
+                                stroke-width="2.5">
+                                <path
+                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                                </path>
+                            </svg>
+                        </div>
+                        <span>Voice</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group-info-section">
+                <div class="info-item">
+                    <div class="info-label">About</div>
+                    <div class="info-value about-text">{{ selectedUser?.about || '(^._.^) ram ram bhai saryane' }}</div>
+                </div>
+            </div>
+
+            <div class="group-info-actions">
+                <button class="exit-action-btn" (click)="blockUser()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                    <span>Block {{ selectedUser?.fullName || selectedUser?.username }}</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>

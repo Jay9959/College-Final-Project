@@ -9,6 +9,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 require('./config/passport');
+const socketHandler = require('./socket/socketHandler');
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -65,34 +66,7 @@ const io = new Server(server, {
    }
 });
 
-let onlineUsers = new Map();
-
-io.on('connection', (socket) => {
-   console.log('New socket connected:', socket.id);
-
-   socket.on('join-user', (userId) => {
-      onlineUsers.set(userId, socket.id);
-      io.emit('online-users', Array.from(onlineUsers.keys()));
-   });
-
-   socket.on('send-message', (data) => {
-      const recipientSocket = onlineUsers.get(data.to);
-      if (recipientSocket) {
-         io.to(recipientSocket).emit('receive-message', data);
-         socket.emit('message-sent', data);
-      }
-   });
-
-   socket.on('disconnect', () => {
-      for (const [userId, id] of onlineUsers.entries()) {
-         if (id === socket.id) {
-            onlineUsers.delete(userId);
-         }
-      }
-      io.emit('online-users', Array.from(onlineUsers.keys()));
-      console.log('Socket disconnected:', socket.id);
-   });
-});
+socketHandler(io);
 
 /* =========================
    ERROR HANDLING

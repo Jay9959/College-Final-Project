@@ -60,6 +60,9 @@ app.use('/api/groups', groupRoutes);
 /* =========================
    SOCKET.IO
 ========================= */
+/* =========================
+   SOCKET.IO
+========================= */
 const io = new Server(server, {
   cors: {
     origin: '*', // Allow all origins
@@ -67,50 +70,39 @@ const io = new Server(server, {
   }
 });
 
-let onlineUsers = new Map();
-
-io.on('connection', (socket) => {
-  console.log('New socket connected:', socket.id);
-
-  socket.on('join-user', (userId) => {
-    onlineUsers.set(userId, socket.id);
-    io.emit('online-users', Array.from(onlineUsers.keys()));
-  });
-
-  socket.on('send-message', (data) => {
-    const recipientSocket = onlineUsers.get(data.to);
-    if (recipientSocket) {
-      io.to(recipientSocket).emit('receive-message', data);
-      socket.emit('message-sent', data);
-    }
-  });
-
-  socket.on('disconnect', () => {
-    for (const [userId, id] of onlineUsers.entries()) {
-      if (id === socket.id) {
-        onlineUsers.delete(userId);
-      }
-    }
-    io.emit('online-users', Array.from(onlineUsers.keys()));
-    console.log('Socket disconnected:', socket.id);
-  });
-});
+// Use the separate socket handler for full functionality
+socketHandler(io);
 
 /* =========================
    FRONTEND STATIC FILES
 ========================= */
 const localFrontendPath = path.join(__dirname, '../frontend/dist/chat-frontend');
 const builtFrontendPath = path.join(__dirname, 'dist/chat-frontend');
-const staticPath = fs.existsSync(builtFrontendPath) ? builtFrontendPath : localFrontendPath;
+
+let staticPath = localFrontendPath;
+if (fs.existsSync(builtFrontendPath)) {
+  console.log('Found built frontend in backend/dist');
+  staticPath = builtFrontendPath;
+} else if (fs.existsSync(localFrontendPath)) {
+  console.log('Found local frontend in ../frontend/dist');
+  staticPath = localFrontendPath;
+} else {
+  console.warn('WARNING: No frontend build found! Run "ng build" in frontend directory.');
+}
 
 console.log(`Serving static files from: ${staticPath}`);
 
 app.use(express.static(staticPath));
 
+// Handle SPA routing - serve index.html for all unknown routes
 app.get('*', (req, res) => {
-  res.sendFile(
-    path.join(staticPath, 'index.html')
-  );
+  const indexPath = path.join(staticPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error(`Index file not found at: ${indexPath}`);
+    res.status(404).send('Application not found - build may be missing');
+  }
 });
 
 /* =========================

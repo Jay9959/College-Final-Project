@@ -31,15 +31,20 @@ app.use(cors({
     'https://college-final-project-1.onrender.com',
     'http://localhost:4200'
   ],
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
+// Preflight support
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
 /* =========================
-   STATIC
+   STATIC FILES
 ========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -60,7 +65,7 @@ const io = new Server(server, {
       'https://college-final-project-1.onrender.com',
       'http://localhost:4200'
     ],
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   }
 });
 
@@ -102,6 +107,6 @@ io.on('connection', (socket) => {
    START SERVER
 ========================= */
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

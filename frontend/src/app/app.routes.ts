@@ -38,6 +38,11 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
     {
+        path: 'mobile-login',
+        loadComponent: () => import('./components/mobile-login/mobile-login.component').then(m => m.MobileLoginComponent),
+        canActivate: [guestGuard]
+    },
+    {
         path: '**',
         redirectTo: 'chat'
     }

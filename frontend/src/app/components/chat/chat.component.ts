@@ -12,6 +12,7 @@ import { User } from '../../models/user.model';
 import { Message } from '../../models/message.model';
 import { environment } from '@environments/environment';
 import { ThemeService, Theme } from '../../services/theme.service';
+import QRCode from 'qrcode';
 
 import { CallModalComponent } from '../call-modal/call-modal.component';
 
@@ -178,6 +179,59 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     // --- Message Info Modal State ---
     showMessageInfoModal = false;
     selectedMessageInfo: Message | null = null;
+
+    // --- Link Device (QR) State ---
+    showLinkDeviceModal = false;
+    qrCodeDataUrl: string | null = null;
+    qrCodeExpires: Date | null = null;
+    qrLoading = false;
+
+    openLinkDeviceModal() {
+        this.showMoreMenu = false; // Close menu if open
+        this.showLinkDeviceModal = true;
+        this.generateLinkQr();
+    }
+
+    closeLinkDeviceModal() {
+        this.showLinkDeviceModal = false;
+        this.qrCodeDataUrl = null;
+    }
+
+    generateLinkQr() {
+        this.qrLoading = true;
+        this.authService.generateQrToken().subscribe({
+            next: (res) => {
+                const linkUrl = `${window.location.origin}/mobile-login?token=${res.token}`;
+                console.log('Generated Mobile Link:', linkUrl);
+
+                // Using QRCode library to generate data URL
+                QRCode.toDataURL(linkUrl, {
+                    width: 280,
+                    margin: 2,
+                    color: {
+                        dark: '#111b21',
+                        light: '#ffffff'
+                    }
+                })
+                    .then(url => {
+                        this.qrCodeDataUrl = url;
+                        this.qrLoading = false;
+                        // res.expiresIn is in seconds
+                        this.qrCodeExpires = new Date(Date.now() + (res.expiresIn * 1000));
+                    })
+                    .catch(err => {
+                        console.error('QR Generation failed', err);
+                        this.qrLoading = false;
+                        this.toastService.error('Failed to generate QR code');
+                    });
+            },
+            error: (err) => {
+                console.error('QR Token fetch failed', err);
+                this.qrLoading = false;
+                this.toastService.error('Failed to init mobile link');
+            }
+        });
+    }
 
     constructor(
         private authService: AuthService,

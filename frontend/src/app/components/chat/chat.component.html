@@ -280,6 +280,13 @@
 
                         <!-- More Menu Dropdown -->
                         <div class="more-dropdown-menu" *ngIf="showMoreMenu">
+                            <div class="more-option" (click)="openLinkDeviceModal()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                     <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                     <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                </svg>
+                                <span>Link with Mobile</span>
+                            </div>
                             <div class="more-option" (click)="handleMoreOption('newGroup')">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -3036,6 +3043,29 @@
         </div>
     </div>
 </div>
+
+    <!-- Link Device Modal -->
+    <div class="modal-overlay" *ngIf="showLinkDeviceModal">
+        <div class="theme-modal animate-scale-in" style="max-width: 350px; padding: 0; background: #202c33; color: #e9edef;">
+             <div class="modal-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; font-size:1.2rem;">Link with Mobile</h3>
+                <button class="close-btn" (click)="closeLinkDeviceModal()" style="background:none; border:none; color:inherit; font-size:1.5rem; cursor:pointer;">×</button>
+            </div>
+            <div class="modal-body" style="padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                <p style="margin-bottom: 20px; color: #8696a0;">Scan this code with your mobile camera to log in instantly.</p>
+                
+                <div class="qr-container" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <div *ngIf="qrLoading" class="spinner" style="width:40px; height:40px; border:3px solid #eee; border-top-color:#00a884; border-radius:50%; animation:spin 1s linear infinite;"></div>
+                    <img *ngIf="qrCodeDataUrl && !qrLoading" [src]="qrCodeDataUrl" style="width: 240px; height: 240px; display: block;">
+                </div>
+
+                <p *ngIf="qrCodeDataUrl" style="font-size: 0.9em; color: #8696a0;">
+                    Code expires in a few minutes. <br>
+                    <a href="javascript:void(0)" (click)="generateLinkQr()" style="color: #00a884; text-decoration: none; font-weight:500;">Refresh code</a>
+                </p>
+            </div>
+        </div>
+    </div>
 
 <!-- Contact Info Modal -->
 <div class="modal-overlay sidebar-overlay" *ngIf="showContactInfo" (click)="closeContactInfo()">

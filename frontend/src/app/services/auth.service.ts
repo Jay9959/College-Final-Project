@@ -138,4 +138,13 @@ export class AuthService {
     resetPassword(email: string, otp: string, password: string): Observable<any> {
         return this.http.post(`${this.apiUrl}/auth/reset-password`, { email, otp, password });
     }
+    generateQrToken(): Observable<{ token: string, expiresIn: number }> {
+        return this.http.post<{ token: string, expiresIn: number }>(`${this.apiUrl}/auth/qr/generate`, {});
+    }
+
+    verifyQrToken(token: string): Observable<AuthResponse> {
+        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/qr/verify`, { token }).pipe(
+            tap(response => this.handleAuthResponse(response))
+        );
+    }
 }

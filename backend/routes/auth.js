@@ -315,4 +315,86 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+
+// QR Code Token Storage (In-Memory)
+const qrTokens = new Map();
+
+// @route   POST /api/auth/qr/generate
+// @desc    Generate a short-lived QR token for session transfer
+// @access  Private
+router.post('/qr/generate', protect, (req, res) => {
+    try {
+        // Generate 6 character random token
+        const token = Math.random().toString(36).substring(2, 8).toUpperCase();
+        
+        // Store in memory with 2 minute expiration
+        qrTokens.set(token, { 
+            userId: req.user._id, 
+            expires: Date.now() + 2 * 60 * 1000 
+        });
+
+        // Cleanup old tokens occasionally (simple strategy)
+        if (qrTokens.size > 100) {
+            for (const [key, val] of qrTokens.entries()) {
+                if (val.expires < Date.now()) qrTokens.delete(key);
+            }
+        }
+
+        res.json({ token, expiresIn: 120 });
+    } catch (error) {
+        console.error('QR Generate error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/auth/qr/verify
+// @desc    Verify QR token and login
+// @access  Public
+router.post('/qr/verify', async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({ message: 'Token is required' });
+        }
+
+        const session = qrTokens.get(token);
+
+        if (!session) {
+            return res.status(400).json({ message: 'Invalid or expired QR code' });
+        }
+
+        if (session.expires < Date.now()) {
+            qrTokens.delete(token);
+            return res.status(400).json({ message: 'QR code has expired' });
+        }
+
+        // Token is valid, find user
+        const user = await User.findById(session.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Login the user (same as standard login)
+        user.isOnline = true;
+        await user.save();
+
+        // Remove token to prevent reuse
+        qrTokens.delete(token);
+
+        res.json({
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            avatar: user.avatar,
+            isOnline: user.isOnline,
+            token: generateToken(user._id)
+        });
+
+    } catch (error) {
+        console.error('QR Verify error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;

@@ -9,23 +9,20 @@ const sendEmail = async (options) => {
 
     console.log(`Configuring email transporter for Gmail User: ${process.env.EMAIL_USER}`);
 
-    // Use built-in 'gmail' service which automatically handles correct config
+    // Use built-in 'gmail' service with Connection Pooling
     const transporter = nodemailer.createTransport({
         service: 'gmail',
+        pool: true, // Use pooled connections
+        maxConnections: 1, // Limit distinct connections to avoid blocks
+        rateLimit: 1, // Limit sending rate
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         }
     });
 
-    // 2. Verify Connection immediately
-    try {
-        await transporter.verify();
-        console.log('SMTP Connection Verified Successfully');
-    } catch (error) {
-        console.error('SMTP Connection Verification Failed:', error);
-        throw new Error(`Email server connection failed: ${error.message}`);
-    }
+    // SKIP explicit 'verify' call to avoid timeouts on initial connection check
+    // Direct send is sometimes more reliable on restricted networks
 
     const mailOptions = {
         from: `"College Chat App" <${process.env.EMAIL_USER}>`,
@@ -35,6 +32,7 @@ const sendEmail = async (options) => {
     };
 
     console.log(`Sending email to: ${options.email}`);
+    // Just send it - let sendMail handle the connection logic
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info.messageId);
 };

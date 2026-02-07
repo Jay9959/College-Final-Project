@@ -301,22 +301,31 @@ router.post('/forgot-password', async (req, res) => {
         `;
 
         try {
-            console.log('Attempting to send email...');
+            console.log('Attempting to send email to:', user.email);
+
+            // Try sending real email
             await sendEmail({
                 email: user.email,
                 subject: 'Password Reset OTP',
                 html: message
             });
             console.log('Email sent successfully');
-
             res.status(200).json({ message: 'OTP sent to email' });
+
         } catch (err) {
-            user.resetPasswordOtp = undefined;
-            user.resetPasswordOtpExpires = undefined;
-            await user.save();
-            console.error('Email send error:', err);
-            // Return the specific error message to the frontend for debugging
-            return res.status(500).json({ message: 'Email could not be sent: ' + (err.message || 'Unknown error') });
+            console.error('Email send FAILED (Render SMTP Block Likely):', err.message);
+
+            // EMERGENCY FALLBACK: Log OTP to console so user can still test the flow
+            console.log('\n==================================================');
+            console.log(`[EMERGENCY BACKUP] OTP for ${user.email}: ${otp}`);
+            console.log('==================================================\n');
+
+            // Pretend it worked so frontend allows user to enter OTP
+            // This is crucial for testing when email servers are blocked
+            res.status(200).json({
+                message: 'Email service error, but OTP generated. Check SERVER LOGS for code.',
+                devNote: 'Render blocks SMTP. Check Logs tab for 6-digit code.'
+            });
         }
     } catch (error) {
         console.error('Forgot Password error:', error);

@@ -172,12 +172,14 @@ export class ForgotPasswordComponent {
       next: (res: any) => {
         this.loading = false;
         this.step = 'otp';
-        this.toastService.success('Verification code sent to your email.');
 
-        // Debug helper for when SMTP is blocked
         if (res && res.otp) {
-          console.log('%c[DEV MODE] OTP Code:', 'background: yellow; color: black; font-size: 14px; font-weight: bold; padding: 4px;', res.otp);
-          console.info('Tip: Use this code if you are on a free server tier that blocks emails.');
+          // If backend returned OTP (due to email failure), show it clearly to the user
+          // Use ALERT so it doesn't disappear and user can read it easily
+          alert(`[EMAIL BLOCKED BY SERVER]\n\nYour Verification Code is: ${res.otp}\n\nPlease enter this code to reset your password.`);
+          console.log('OTP Code:', res.otp);
+        } else {
+          this.toastService.success('Verification code sent to your email.');
         }
       },
       error: (err) => {

@@ -323,7 +323,8 @@ router.post('/forgot-password', async (req, res) => {
             // Pretend it worked so frontend allows user to enter OTP
             // This is crucial for testing when email servers are blocked
             res.status(200).json({
-                message: 'Email service error, but OTP generated. Check SERVER LOGS for code.',
+                message: 'Email service error, but OTP generated. Check SERVER LOGS or BROWSER CONSOLE for code.',
+                otp: otp,
                 devNote: 'Render blocks SMTP. Check Logs tab for 6-digit code.'
             });
         }

@@ -169,10 +169,16 @@ export class ForgotPasswordComponent {
     if (!this.email) return;
     this.loading = true;
     this.authService.forgotPassword(this.email).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.loading = false;
         this.step = 'otp';
         this.toastService.success('Verification code sent to your email.');
+
+        // Debug helper for when SMTP is blocked
+        if (res && res.otp) {
+          console.log('%c[DEV MODE] OTP Code:', 'background: yellow; color: black; font-size: 14px; font-weight: bold; padding: 4px;', res.otp);
+          console.info('Tip: Use this code if you are on a free server tier that blocks emails.');
+        }
       },
       error: (err) => {
         this.loading = false;

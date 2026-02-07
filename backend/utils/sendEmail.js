@@ -9,24 +9,13 @@ const sendEmail = async (options) => {
 
     console.log(`Configuring email transporter for Gmail User: ${process.env.EMAIL_USER}`);
 
-    // Switch to Port 587 with STARTTLS and Force IPv4 (fixes some timeout issues)
+    // Use built-in 'gmail' service which automatically handles correct config
     const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false, // upgrade later with STARTTLS
+        service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
-        },
-        tls: {
-            rejectUnauthorized: false
-        },
-        // Force IPv4 to avoid IPv6 routing issues
-        family: 4,
-        logger: true,
-        debug: true,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000
+        }
     });
 
     // 2. Verify Connection immediately

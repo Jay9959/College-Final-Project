@@ -228,14 +228,16 @@ router.get('/test-email', async (req, res) => {
         console.log('Testing Email Configuration...');
         const user = process.env.EMAIL_USER || 'MISSING';
         const pass = process.env.EMAIL_PASS ? 'PRESENT' : 'MISSING';
+        const host = process.env.EMAIL_HOST || 'DEFAULT (gmail)';
+        const port = process.env.EMAIL_PORT || 'DEFAULT';
 
-        console.log(`Env Check: USER=${user}, PASS=${pass}`);
+        console.log(`Env Check: USER=${user}, PASS=${pass}, HOST=${host}, PORT=${port}`);
 
         if (user === 'MISSING' || pass === 'MISSING') {
             return res.status(500).json({
                 success: false,
                 error: 'Environment variables missing',
-                debug: { user, pass }
+                debug: { user, pass, host, port }
             });
         }
 
@@ -243,10 +245,18 @@ router.get('/test-email', async (req, res) => {
         await sendEmail({
             email: process.env.EMAIL_USER, // Send to self
             subject: 'Test Email from College App',
-            html: '<h1>Email Configuration Works!</h1><p>Your server can send emails.</p>'
+            html: `<h1>Email Configuration Works!</h1><p>Sent via ${host}:${port}</p>`
         });
 
-        res.json({ success: true, message: 'Email passed all checks and was sent to ' + user });
+        res.json({
+            success: true,
+            message: `Email sent to ${user} via ${host}:${port}`,
+            config: {
+                host: host,
+                port: port,
+                user: user
+            }
+        });
     } catch (error) {
         console.error('Test Email Failed:', error);
         res.status(500).json({

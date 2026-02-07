@@ -277,7 +277,8 @@ router.post('/forgot-password', async (req, res) => {
             user.resetPasswordOtpExpires = undefined;
             await user.save();
             console.error('Email send error:', err);
-            return res.status(500).json({ message: 'Email could not be sent' });
+            // Return the specific error message to the frontend for debugging
+            return res.status(500).json({ message: 'Email could not be sent: ' + (err.message || 'Unknown error') });
         }
     } catch (error) {
         console.error('Forgot Password error:', error);

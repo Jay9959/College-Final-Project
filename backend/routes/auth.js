@@ -339,6 +339,20 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
+        console.log(`[Verify OTP] Request received for: ${email}, OTP: ${otp}`);
+
+        // Debug: Check if user exists first
+        const debugUser = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+        if (debugUser) {
+            console.log(`[Verify OTP] User found: ${debugUser.email}`);
+            console.log(`[Verify OTP] Stored OTP: ${debugUser.resetPasswordOtp}`);
+            console.log(`[Verify OTP] Expires: ${debugUser.resetPasswordOtpExpires} (Current: ${Date.now()})`);
+            console.log(`[Verify OTP] Expired? ${debugUser.resetPasswordOtpExpires < Date.now()}`);
+            console.log(`[Verify OTP] OTP Match? ${debugUser.resetPasswordOtp === otp.toString()}`);
+        } else {
+            console.log(`[Verify OTP] User NOT found for email: ${email}`);
+        }
+
         const user = await User.findOne({
             email: { $regex: new RegExp(`^${email}$`, 'i') },
             resetPasswordOtp: otp,
@@ -346,6 +360,7 @@ router.post('/verify-otp', async (req, res) => {
         });
 
         if (!user) {
+            console.log('[Verify OTP] Validation Failed: Invalid or expired OTP');
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 

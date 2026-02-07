@@ -220,6 +220,54 @@ router.get('/me', protect, async (req, res) => {
     }
 });
 
+// @route   GET /api/auth/test-email
+// @desc    Test email configuration directly
+// @access  Public
+router.get('/test-email', async (req, res) => {
+    try {
+        console.log('Testing Email Configuration...');
+        const user = process.env.EMAIL_USER || 'MISSING';
+        const pass = process.env.EMAIL_PASS ? 'PRESENT' : 'MISSING';
+        const host = process.env.EMAIL_HOST || 'DEFAULT (gmail)';
+        const port = process.env.EMAIL_PORT || 'DEFAULT';
+
+        console.log(`Env Check: USER=${user}, PASS=${pass}, HOST=${host}, PORT=${port}`);
+
+        if (user === 'MISSING' || pass === 'MISSING') {
+            return res.status(500).json({
+                success: false,
+                error: 'Environment variables missing',
+                debug: { user, pass, host, port }
+            });
+        }
+
+        // Try sending a test email to self
+        await sendEmail({
+            email: process.env.EMAIL_USER, // Send to self
+            subject: 'Test Email from College App',
+            html: `<h1>Email Configuration Works!</h1><p>Sent via ${host}:${port}</p>`
+        });
+
+        res.json({
+            success: true,
+            message: `Email sent to ${user} via ${host}:${port}`,
+            config: {
+                host: host,
+                port: port,
+                user: user
+            }
+        });
+    } catch (error) {
+        console.error('Test Email Failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Email Test Failed',
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
 // @route   POST /api/auth/forgot-password
 // @desc    Send OTP for password reset
 // @access  Public
@@ -263,21 +311,32 @@ router.post('/forgot-password', async (req, res) => {
         `;
 
         try {
-            console.log('Attempting to send email...');
+            console.log('Attempting to send email to:', user.email);
+
+            // Try sending real email
             await sendEmail({
                 email: user.email,
                 subject: 'Password Reset OTP',
                 html: message
             });
             console.log('Email sent successfully');
-
             res.status(200).json({ message: 'OTP sent to email' });
+
         } catch (err) {
-            user.resetPasswordOtp = undefined;
-            user.resetPasswordOtpExpires = undefined;
-            await user.save();
-            console.error('Email send error:', err);
-            return res.status(500).json({ message: 'Email could not be sent' });
+            console.error('Email send FAILED (Render SMTP Block Likely):', err.message);
+
+            // EMERGENCY FALLBACK: Log OTP to console so user can still test the flow
+            console.log('\n==================================================');
+            console.log(`[EMERGENCY BACKUP] OTP for ${user.email}: ${otp}`);
+            console.log('==================================================\n');
+
+            // Pretend it worked so frontend allows user to enter OTP
+            // This is crucial for testing when email servers are blocked
+            res.status(200).json({
+                message: 'Email service error, but OTP generated. Check SERVER LOGS or BROWSER CONSOLE for code.',
+                otp: otp,
+                devNote: 'Render blocks SMTP. Check Logs tab for 6-digit code.'
+            });
         }
     } catch (error) {
         console.error('Forgot Password error:', error);
@@ -291,6 +350,20 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
+        console.log(`[Verify OTP] Request received for: ${email}, OTP: ${otp}`);
+
+        // Debug: Check if user exists first
+        const debugUser = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+        if (debugUser) {
+            console.log(`[Verify OTP] User found: ${debugUser.email}`);
+            console.log(`[Verify OTP] Stored OTP: ${debugUser.resetPasswordOtp}`);
+            console.log(`[Verify OTP] Expires: ${debugUser.resetPasswordOtpExpires} (Current: ${Date.now()})`);
+            console.log(`[Verify OTP] Expired? ${debugUser.resetPasswordOtpExpires < Date.now()}`);
+            console.log(`[Verify OTP] OTP Match? ${debugUser.resetPasswordOtp === otp.toString()}`);
+        } else {
+            console.log(`[Verify OTP] User NOT found for email: ${email}`);
+        }
+
         const user = await User.findOne({
             email: { $regex: new RegExp(`^${email}$`, 'i') },
             resetPasswordOtp: otp,
@@ -298,6 +371,7 @@ router.post('/verify-otp', async (req, res) => {
         });
 
         if (!user) {
+            console.log('[Verify OTP] Validation Failed: Invalid or expired OTP');
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
 

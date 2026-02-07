@@ -169,10 +169,18 @@ export class ForgotPasswordComponent {
     if (!this.email) return;
     this.loading = true;
     this.authService.forgotPassword(this.email).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.loading = false;
         this.step = 'otp';
-        this.toastService.success('Verification code sent to your email.');
+
+        if (res && res.otp) {
+          // If backend returned OTP (due to email failure), show it clearly to the user
+          // Use ALERT so it doesn't disappear and user can read it easily
+          alert(`[EMAIL BLOCKED BY SERVER]\n\nYour Verification Code is: ${res.otp}\n\nPlease enter this code to reset your password.`);
+          console.log('OTP Code:', res.otp);
+        } else {
+          this.toastService.success('Verification code sent to your email.');
+        }
       },
       error: (err) => {
         this.loading = false;

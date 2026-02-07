@@ -220,6 +220,44 @@ router.get('/me', protect, async (req, res) => {
     }
 });
 
+// @route   GET /api/auth/test-email
+// @desc    Test email configuration directly
+// @access  Public
+router.get('/test-email', async (req, res) => {
+    try {
+        console.log('Testing Email Configuration...');
+        const user = process.env.EMAIL_USER || 'MISSING';
+        const pass = process.env.EMAIL_PASS ? 'PRESENT' : 'MISSING';
+
+        console.log(`Env Check: USER=${user}, PASS=${pass}`);
+
+        if (user === 'MISSING' || pass === 'MISSING') {
+            return res.status(500).json({
+                success: false,
+                error: 'Environment variables missing',
+                debug: { user, pass }
+            });
+        }
+
+        // Try sending a test email to self
+        await sendEmail({
+            email: process.env.EMAIL_USER, // Send to self
+            subject: 'Test Email from College App',
+            html: '<h1>Email Configuration Works!</h1><p>Your server can send emails.</p>'
+        });
+
+        res.json({ success: true, message: 'Email passed all checks and was sent to ' + user });
+    } catch (error) {
+        console.error('Test Email Failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Email Test Failed',
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
 // @route   POST /api/auth/forgot-password
 // @desc    Send OTP for password reset
 // @access  Public

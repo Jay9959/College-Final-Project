@@ -281,9 +281,10 @@
                         <!-- More Menu Dropdown -->
                         <div class="more-dropdown-menu" *ngIf="showMoreMenu">
                             <div class="more-option" (click)="openLinkDeviceModal()">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                     <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-                                     <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
                                 </svg>
                                 <span>Link with Mobile</span>
                             </div>
@@ -410,8 +411,21 @@
                             </svg>
                         </button>
                         <!-- Text Message -->
-                        <p *ngIf="message.messageType === 'text' || !message.messageType" class="message-text">{{
-                            message.content }}</p>
+                        <p *ngIf="message.messageType === 'text' || !message.messageType" class="message-text">
+                            {{ message.content }}
+                        </p>
+
+                        <!-- Translation Display -->
+                        <div *ngIf="isTranslating[message._id]"
+                            style="font-size: 0.8rem; color: var(--text-muted); padding: 4px 0; font-style: italic;">
+                            Translating...
+                        </div>
+                        <div *ngIf="translatedMessages[message._id]"
+                            style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                            <div style="font-size: 0.75rem; color: var(--accent-primary); margin-bottom: 2px;">
+                                Translated:</div>
+                            <p style="margin: 0; font-size: 0.95em;">{{ translatedMessages[message._id] }}</p>
+                        </div>
 
                         <!-- Image Message -->
                         <div *ngIf="message.messageType === 'image'" class="message-image">
@@ -727,6 +741,46 @@
                     <input type="file" #cameraInput style="display: none" (change)="onChatFileSelected($event)"
                         accept="image/*" capture="environment">
 
+                    <!-- Language Selector Popup -->
+                    <div class="language-selector-popup animate-scale-in" *ngIf="showLanguageSelector">
+                        <div class="lang-header">
+                            <span>Select Language</span>
+                            <button class="close-lang-btn" (click)="showLanguageSelector = false">×</button>
+                        </div>
+                        <div class="lang-grid">
+                            <div class="lang-option" *ngFor="let lang of supportedLanguages"
+                                [class.active-lang]="targetLanguage === lang.code"
+                                (click)="setTargetLanguage(lang.code)">
+                                {{ lang.name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="action-btn" (click)="toggleTranslationMode()" title="Translate Message"
+                        [style.color]="isTranslationMode ? '#00a884' : ''" style="margin-right: 5px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 8l6 6"></path>
+                            <path d="M4 14h6"></path>
+                            <path d="M2 5h12"></path>
+                            <path d="M7 2v3"></path>
+                            <path d="M22 22l-5-10-5 10"></path>
+                            <path d="M14 18h6"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Live Translation Preview -->
+                    <div class="translation-preview-bar animate-scale-in"
+                        *ngIf="isTranslationMode && newMessage.trim()">
+                        <div class="preview-content">
+                            <span class="preview-label">Translation Preview:</span>
+                            <span class="preview-text" *ngIf="!isPreviewLoading; else loadingPreview">{{
+                                liveTranslationPreview || '...' }}</span>
+                            <ng-template #loadingPreview><span
+                                    class="preview-text loading">Translating...</span></ng-template>
+                        </div>
+                    </div>
+
                     <button class="action-btn" (click)="toggleEmojiPicker()" title="Emoji">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -737,9 +791,9 @@
                         </svg>
                     </button>
 
-                    <input type="text" [placeholder]="isRecording ? 'Recording audio...' : 'Type your message...'"
-                        [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" (input)="onTyping()"
-                        [disabled]="isRecording">
+                    <input type="text" [placeholder]="translationPlaceholder" [(ngModel)]="newMessage"
+                        (keyup.enter)="sendMessage()" (input)="onTyping()" [disabled]="isRecording"
+                        [style.border-bottom]="isTranslationMode ? '2px solid #00a884' : 'none'">
 
                     <!-- Mic / Stop Button -->
                     <button class="action-btn" *ngIf="!newMessage.trim()"
@@ -2942,6 +2996,10 @@
         <span>Forward</span>
     </div>
 
+    <div class="menu-divider"></div>
+
+    <!-- Translation Removed from Context Menu -->
+
     <div class="menu-item" (click)="starMessage(contextMenuMessage!)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon
@@ -3043,28 +3101,38 @@
     </div>
 </div>
 
-    <!-- Link Device Modal -->
-    <div class="modal-overlay" *ngIf="showLinkDeviceModal">
-        <div class="theme-modal animate-scale-in" style="max-width: 350px; padding: 0; background: #202c33; color: #e9edef;">
-             <div class="modal-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="margin:0; font-size:1.2rem;">Link with Mobile</h3>
-                <button class="close-btn" (click)="closeLinkDeviceModal()" style="background:none; border:none; color:inherit; font-size:1.5rem; cursor:pointer;">×</button>
-            </div>
-            <div class="modal-body" style="padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center;">
-                <p style="margin-bottom: 20px; color: #8696a0;">Scan this code with your mobile camera to log in instantly.</p>
-                
-                <div class="qr-container" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                    <div *ngIf="qrLoading" class="spinner" style="width:40px; height:40px; border:3px solid #eee; border-top-color:#00a884; border-radius:50%; animation:spin 1s linear infinite;"></div>
-                    <img *ngIf="qrCodeDataUrl && !qrLoading" [src]="qrCodeDataUrl" style="width: 240px; height: 240px; display: block;">
-                </div>
+<!-- Link Device Modal -->
+<div class="modal-overlay" *ngIf="showLinkDeviceModal">
+    <div class="theme-modal animate-scale-in"
+        style="max-width: 350px; padding: 0; background: #202c33; color: #e9edef;">
+        <div class="modal-header"
+            style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:1.2rem;">Link with Mobile</h3>
+            <button class="close-btn" (click)="closeLinkDeviceModal()"
+                style="background:none; border:none; color:inherit; font-size:1.5rem; cursor:pointer;">×</button>
+        </div>
+        <div class="modal-body"
+            style="padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <p style="margin-bottom: 20px; color: #8696a0;">Scan this code with your mobile camera to log in instantly.
+            </p>
 
-                <p *ngIf="qrCodeDataUrl" style="font-size: 0.9em; color: #8696a0;">
-                    Code expires in a few minutes. <br>
-                    <a href="javascript:void(0)" (click)="generateLinkQr()" style="color: #00a884; text-decoration: none; font-weight:500;">Refresh code</a>
-                </p>
+            <div class="qr-container"
+                style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div *ngIf="qrLoading" class="spinner"
+                    style="width:40px; height:40px; border:3px solid #eee; border-top-color:#00a884; border-radius:50%; animation:spin 1s linear infinite;">
+                </div>
+                <img *ngIf="qrCodeDataUrl && !qrLoading" [src]="qrCodeDataUrl"
+                    style="width: 240px; height: 240px; display: block;">
             </div>
+
+            <p *ngIf="qrCodeDataUrl" style="font-size: 0.9em; color: #8696a0;">
+                Code expires in a few minutes. <br>
+                <a href="javascript:void(0)" (click)="generateLinkQr()"
+                    style="color: #00a884; text-decoration: none; font-weight:500;">Refresh code</a>
+            </p>
         </div>
     </div>
+</div>
 
 <!-- Contact Info Modal -->
 <div class="modal-overlay sidebar-overlay" *ngIf="showContactInfo" (click)="closeContactInfo()">

@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, Subject, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { SocketService } from '../../services/socket.service';
 import { ChatService } from '../../services/chat.service';
@@ -13,6 +14,7 @@ import { Message } from '../../models/message.model';
 import { environment } from '@environments/environment';
 import { ThemeService, Theme } from '../../services/theme.service';
 import QRCode from 'qrcode';
+import { TranslationService } from '../../services/translation.service';
 
 import { CallModalComponent } from '../call-modal/call-modal.component';
 
@@ -26,7 +28,17 @@ import { CallModalComponent } from '../call-modal/call-modal.component';
 export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
 
+    // --- Translation State ---
+    translatedMessages: { [key: string]: string } = {};
+    isTranslating: { [key: string]: boolean } = {};
+
+    // Live Translation Preview State
+    liveTranslationPreview = '';
+    isPreviewLoading = false;
+    private translateSubject = new Subject<string>();
+
     currentUser: User | null = null;
+
     users: User[] = [];
     selectedUser: User | null = null;
     messages: Message[] = [];
@@ -240,9 +252,88 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         private themeService: ThemeService,
         private router: Router,
         public toastService: ToastService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private translationService: TranslationService
     ) {
         this.currentTheme = this.themeService.getTheme();
+    }
+
+    get translationPlaceholder(): string {
+        if (this.isTranslationMode) {
+            const langName = this.supportedLanguages.find(l => l.code === this.targetLanguage)?.name || 'Language';
+            return `Type to translate to ${langName}`;
+        }
+        return this.isRecording ? 'Recording audio...' : 'Type your message...';
+    }
+
+
+    // --- Translation Logic ---
+    isTranslationMode = false;
+    targetLanguage = 'gu'; // Default to Gujarati
+    supportedLanguages = [
+        { code: 'gu', name: 'Gujarati' },
+        { code: 'hi', name: 'Hindi' },
+        { code: 'mr', name: 'Marathi' },
+        { code: 'bn', name: 'Bengali' },
+        { code: 'ta', name: 'Tamil' },
+        { code: 'te', name: 'Telugu' },
+        { code: 'kn', name: 'Kannada' },
+        { code: 'ml', name: 'Malayalam' },
+        { code: 'pa', name: 'Punjabi' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'ru', name: 'Russian' },
+        { code: 'ja', name: 'Japanese' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh', name: 'Chinese' },
+        { code: 'ar', name: 'Arabic' }
+    ];
+    showLanguageSelector = false;
+
+    toggleTranslationMode() {
+        this.isTranslationMode = !this.isTranslationMode;
+        this.liveTranslationPreview = ''; // Reset
+        if (this.isTranslationMode) {
+            this.showLanguageSelector = true;
+            this.translateSubject.next(this.newMessage); // Trigger immediate if text exists
+        } else {
+            this.showLanguageSelector = false;
+        }
+    }
+
+    toggleLanguageSelector() {
+        this.showLanguageSelector = !this.showLanguageSelector;
+    }
+
+    setTargetLanguage(langCode: string) {
+        this.targetLanguage = langCode;
+        this.showLanguageSelector = false;
+        this.isTranslationMode = true;
+        this.translateSubject.next(this.newMessage); // Retranslate
+        this.toastService.success(`Translation set to ${this.supportedLanguages.find(l => l.code === langCode)?.name}`);
+    }
+
+
+
+    translateMessage(message: Message, targetLang: string) {
+        if (!message.content) return;
+
+        this.isTranslating[message._id] = true;
+
+        this.translationService.translate(message.content, targetLang).subscribe(translatedText => {
+            this.translatedMessages[message._id] = translatedText;
+            this.isTranslating[message._id] = false;
+            this.toastService.success(`Translated to ${targetLang}`);
+            this.cdr.detectChanges();
+        });
+    }
+
+    handleTranslate(langCode: string) {
+        if (this.contextMenuMessage) {
+            this.translateMessage(this.contextMenuMessage, langCode);
+            this.showContextMenu = false;
+        }
     }
 
     ngOnInit(): void {
@@ -251,6 +342,30 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             Notification.requestPermission();
         }
         this.applyFontSize();
+
+        // Setup Live Translation Preview
+        this.subscriptions.push(
+            this.translateSubject.pipe(
+                debounceTime(500),
+                distinctUntilChanged(),
+                switchMap(text => {
+                    if (!this.isTranslationMode || !text.trim()) {
+                        return of('');
+                    }
+                    this.isPreviewLoading = true;
+                    return this.translationService.translate(text, this.targetLanguage).pipe(
+                        catchError(() => {
+                            this.isPreviewLoading = false;
+                            return of('');
+                        })
+                    );
+                })
+            ).subscribe(translatedText => {
+                this.liveTranslationPreview = translatedText;
+                this.isPreviewLoading = false;
+                this.cdr.detectChanges();
+            })
+        );
 
         this.subscriptions.push(
             this.authService.currentUser$.subscribe(user => {
@@ -534,14 +649,48 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (!this.newMessage.trim() || !this.selectedUser || !this.currentUser) return;
 
         const content = this.newMessage.trim();
+
+        // If translation mode is ON, translate first
+        if (this.isTranslationMode) {
+            // Optimistic UI for translation: show "Translating..." or just wait?
+            // User wants "it gets translated". Let's show a toast or indicator?
+            // Actually, let's keep it simple: Wait for translation then send. 
+            // To prevent UI lag perception, we can clear input immediately but show a spinner?
+            // Better: Use the Optimistic UI but with a "Traslating..." placeholder?
+            // No, let's just translate and THEN do the optimistic update with the translated text.
+
+            this.translationService.translate(content, this.targetLanguage).subscribe({
+                next: (translatedText) => {
+                    this.processSendMessage(translatedText);
+                },
+                error: (err) => {
+                    console.error('Translation failed', err);
+                    // Fallback to original text
+                    this.processSendMessage(content);
+                }
+            });
+
+            this.newMessage = ''; // Clear input immediately
+            this.liveTranslationPreview = '';
+            this.replyingToMessage = null;
+            return;
+        }
+
+        this.processSendMessage(content);
+        this.newMessage = '';
+        this.liveTranslationPreview = ''; // Clear preview
+        this.replyingToMessage = null; // Clear reply bar after sending
+    }
+
+    private processSendMessage(content: string) {
         const tempLocalId = 'temp-' + Date.now();
 
         // Optimistic UI Update: Create and show message immediately
         const tempMessage: Message = {
             _id: tempLocalId, // Temporary ID
             localId: tempLocalId,
-            sender: this.currentUser,
-            receiver: this.selectedUser,
+            sender: this.currentUser!,
+            receiver: this.selectedUser!,
             content: content,
             messageType: 'text',
             delivered: false,
@@ -556,20 +705,19 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         // Store current reply for socket call
         const replyToId = this.replyingToMessage?._id;
 
-        this.newMessage = '';
-        this.replyingToMessage = null; // Clear reply bar after sending
         this.cdr.detectChanges(); // Force update view
 
         // Send to server
         this.socketService.sendMessage({
-            senderId: this.currentUser._id,
-            receiverId: this.selectedUser._id,
+            senderId: this.currentUser!._id,
+            receiverId: this.selectedUser!._id,
             content: content,
             replyToId: replyToId
         });
 
-        this.socketService.sendTyping({ senderId: this.currentUser._id, receiverId: this.selectedUser._id, isTyping: false });
+        this.socketService.sendTyping({ senderId: this.currentUser!._id, receiverId: this.selectedUser!._id, isTyping: false });
     }
+
 
     setReply(message: Message): void {
         this.replyingToMessage = message;
@@ -592,6 +740,14 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     onTyping(): void {
         if (!this.selectedUser || !this.currentUser) return;
+
+        // Trigger Live Translation
+        if (this.isTranslationMode) {
+            this.translateSubject.next(this.newMessage);
+        } else {
+            this.liveTranslationPreview = ''; // Clear if disabled
+        }
+
         if (this.typingTimeout) clearTimeout(this.typingTimeout);
         this.socketService.sendTyping({ senderId: this.currentUser._id, receiverId: this.selectedUser._id, isTyping: true });
         this.typingTimeout = setTimeout(() => {

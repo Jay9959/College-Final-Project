@@ -9,11 +9,21 @@ const sendEmail = async (options) => {
 
     console.log(`Configuring email transporter for Gmail User: ${process.env.EMAIL_USER}`);
 
+    // Use Port 465 (SSL) which is often more reliable in cloud environments than 587
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
+        },
+        // Increase timeouts to handle cloud latency
+        connectionTimeout: 30000, // 30 seconds
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        tls: {
+            rejectUnauthorized: false
         }
     });
 

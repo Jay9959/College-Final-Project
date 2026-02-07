@@ -7,17 +7,17 @@ const sendEmail = async (options) => {
         throw new Error('Server email configuration is missing');
     }
 
-    console.log(`Configuring email transporter for Gmail User: ${process.env.EMAIL_USER}`);
-
-    // Use built-in 'gmail' service with Connection Pooling
+    // Use Brevo SMTP (Reliable, No blocking)
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        pool: true, // Use pooled connections
-        maxConnections: 1, // Limit distinct connections to avoid blocks
-        rateLimit: 1, // Limit sending rate
+        host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+        port: Number(process.env.EMAIL_PORT) || 587,
+        secure: false, // true for 465, false for 587
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
+        },
+        tls: {
+            rejectUnauthorized: false
         }
     });
 

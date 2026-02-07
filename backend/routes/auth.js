@@ -281,7 +281,7 @@ router.post('/forgot-password', async (req, res) => {
         }
     } catch (error) {
         console.error('Forgot Password error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message || 'Server error' });
     }
 });
 
@@ -347,11 +347,11 @@ router.post('/qr/generate', protect, (req, res) => {
     try {
         // Generate 6 character random token
         const token = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
+
         // Store in memory with 2 minute expiration
-        qrTokens.set(token, { 
-            userId: req.user._id, 
-            expires: Date.now() + 2 * 60 * 1000 
+        qrTokens.set(token, {
+            userId: req.user._id,
+            expires: Date.now() + 2 * 60 * 1000
         });
 
         // Cleanup old tokens occasionally (simple strategy)
@@ -374,7 +374,7 @@ router.post('/qr/generate', protect, (req, res) => {
 router.post('/qr/verify', async (req, res) => {
     try {
         const { token } = req.body;
-        
+
         if (!token) {
             return res.status(400).json({ message: 'Token is required' });
         }

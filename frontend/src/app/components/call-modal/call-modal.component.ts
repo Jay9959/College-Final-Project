@@ -1,12 +1,13 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SocketService } from '../../services/socket.service';
 import { Subscription } from 'rxjs';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-call-modal',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './call-modal.component.html',
     styleUrl: './call-modal.component.css'
 })
@@ -26,6 +27,20 @@ export class CallModalComponent implements OnInit, OnDestroy {
     audioEnabled = true;
     videoEnabled = true;
 
+    // Filters
+    selectedFilter = 'none';
+    availableFilters = [
+        { name: 'Normal', value: 'none' },
+        { name: 'Grayscale', value: 'grayscale(100%)' },
+        { name: 'Sepia', value: 'sepia(100%)' },
+        { name: 'Blur', value: 'blur(5px)' },
+        { name: 'Invert', value: 'invert(100%)' },
+        { name: 'Brightness', value: 'brightness(150%)' },
+        { name: 'Contrast', value: 'contrast(200%)' }
+    ];
+
+    showFilterMenu = false;
+
     // WebRTC
     private peerConnection!: RTCPeerConnection;
     private localStream!: MediaStream;
@@ -41,7 +56,10 @@ export class CallModalComponent implements OnInit, OnDestroy {
         ]
     };
 
-    constructor(private socketService: SocketService) { }
+    constructor(
+        private socketService: SocketService,
+        private cdr: ChangeDetectorRef
+    ) { }
 
     ngOnInit(): void {
         // Listen for incoming calls
@@ -53,6 +71,7 @@ export class CallModalComponent implements OnInit, OnDestroy {
                     this.callerId = data.from;
                     this.callerSignal = data.signal;
                     this.callType = data.callType || 'video'; // Default to video if missing
+                    this.cdr.detectChanges();
                 } else {
                     // Busy? For simple implementation, just ignore or auto-reject
                     this.socketService.rejectCall({ to: data.from });
@@ -77,20 +96,15 @@ export class CallModalComponent implements OnInit, OnDestroy {
             }),
 
             this.socketService.onCallRejected().subscribe(() => {
-                alert('User rejected the call');
-
-                // The other person rejected me -> It's a "Missed Call" for them? Or just "Call Rejected"?
-                // User screenshot says "Missed video call".
-                // Usually if I call and they don't answer, it's missed.
-                // If they reject, it's also effectively missed/declined.
-
-                this.socketService.emitCallLog({
-                    to: this.callerId, // I am calling, so 'to' is the person I called (callerId was set to userToCallId in startCall)
-                    type: 'missed',
-                    callType: this.callType
-                });
-
-                this.resetCall();
+                // User rejected call
+                if (this.callActive) {
+                    this.socketService.emitCallLog({
+                        to: this.callerId,
+                        type: 'missed',
+                        callType: this.callType
+                    });
+                    this.resetCall();
+                }
             }),
 
             this.socketService.onCallEnded().subscribe(() => {
@@ -106,11 +120,22 @@ export class CallModalComponent implements OnInit, OnDestroy {
 
     // --- Actions ---
 
+    toggleFilterMenu() {
+        this.showFilterMenu = !this.showFilterMenu;
+    }
+
+    applyFilter(filterValue: string) {
+        this.selectedFilter = filterValue;
+    }
+
     // Initiate an outgoing call
     async startCall(userToCallId: string, userName: string, type: 'video' | 'audio' = 'video') {
         this.callActive = true;
         this.callerId = userToCallId; // Used for "endCall" target
         this.callType = type;
+
+        // Force view update to render video elements
+        this.cdr.detectChanges();
 
         await this.setupMedia();
         this.createPeerConnection(userToCallId);
@@ -133,9 +158,12 @@ export class CallModalComponent implements OnInit, OnDestroy {
         this.callActive = true;
         this.startTime = Date.now();
 
+        // Force view update
+        this.cdr.detectChanges();
+
         await this.setupMedia();
 
-        // Small delay to ensure DOM is ready
+        // Small delay to ensure DOM is ready and media is set
         setTimeout(async () => {
             this.createPeerConnection(this.callerId);
 
@@ -173,12 +201,16 @@ export class CallModalComponent implements OnInit, OnDestroy {
 
     toggleAudio() {
         this.audioEnabled = !this.audioEnabled;
-        this.localStream.getAudioTracks().forEach(track => track.enabled = this.audioEnabled);
+        if (this.localStream) {
+            this.localStream.getAudioTracks().forEach(track => track.enabled = this.audioEnabled);
+        }
     }
 
     toggleVideo() {
         this.videoEnabled = !this.videoEnabled;
-        this.localStream.getVideoTracks().forEach(track => track.enabled = this.videoEnabled);
+        if (this.localStream) {
+            this.localStream.getVideoTracks().forEach(track => track.enabled = this.videoEnabled);
+        }
     }
 
     // --- Helpers ---
@@ -204,9 +236,14 @@ export class CallModalComponent implements OnInit, OnDestroy {
             this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
             console.log('Media stream obtained:', this.localStream.getTracks());
 
+            // Check again if we have the video element ref after the async operation
+            this.cdr.detectChanges();
+
             if (this.localVideo && this.callType === 'video') {
                 console.log('Setting local video srcObject');
                 this.localVideo.nativeElement.srcObject = this.localStream;
+                this.localVideo.nativeElement.muted = true; // Avoid feedback loop
+
                 // Explicitly play the video to ensure it displays
                 try {
                     await this.localVideo.nativeElement.play();
@@ -214,6 +251,8 @@ export class CallModalComponent implements OnInit, OnDestroy {
                 } catch (playErr) {
                     console.error('Error playing local video:', playErr);
                 }
+            } else {
+                console.warn('Local video element not found!');
             }
         } catch (err) {
             console.error('Error accessing media devices:', err);
@@ -236,6 +275,9 @@ export class CallModalComponent implements OnInit, OnDestroy {
             // Only set srcObject if not already set to prevent interrupting playback
             if (!this.remoteStream) {
                 this.remoteStream = event.streams[0];
+
+                // Trigger change detection to ensure remote video element is ready if needed
+                this.cdr.detectChanges();
 
                 if (this.remoteVideo) {
                     console.log('Setting remote video srcObject');
@@ -274,6 +316,7 @@ export class CallModalComponent implements OnInit, OnDestroy {
         this.incomingCall = false;
         this.callerId = '';
         this.callerName = '';
+        this.startTime = null;
 
         if (this.localStream) {
             this.localStream.getTracks().forEach(track => track.stop());
@@ -282,5 +325,7 @@ export class CallModalComponent implements OnInit, OnDestroy {
         if (this.peerConnection) {
             this.peerConnection.close();
         }
+
+        this.cdr.detectChanges();
     }
 }

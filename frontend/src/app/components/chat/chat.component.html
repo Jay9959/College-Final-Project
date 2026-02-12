@@ -1,6 +1,12 @@
 <div class="chat-container">
     <!-- Sidebar -->
     <aside class="sidebar" [class.mobile-hidden]="selectedUser">
+        <!-- New App Brand Header -->
+        <div class="app-logo-header">
+            <img src="assets/logo.svg" class="app-logo" alt="ChatApp Logo">
+            <span class="app-name">ChatApp</span>
+        </div>
+
         <div class="sidebar-header">
             <div class="user-info">
                 <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept="image/*">
@@ -94,17 +100,8 @@
         </div>
         <div *ngIf="!selectedUser" class="no-chat">
             <div class="no-chat-content animate-fade-in">
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="1.5">
-                    <defs>
-                        <linearGradient id="gradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#3b82f6" />
-                            <stop offset="100%" stop-color="#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <path
-                        d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
-                    </path>
-                </svg>
+                <img src="assets/logo.svg" alt="ChatApp Logo"
+                    style="width: 120px; height: 120px; margin-bottom: 24px; filter: drop-shadow(0 0 40px rgba(0, 242, 254, 0.4));">
                 <h2>Chat</h2>
                 <p>Select a conversation to start messaging.</p>
             </div>
@@ -928,1441 +925,845 @@
         </div>
     </div>
 
-    <!-- Advanced Settings Modal -->
-    <div class="settings-overlay" *ngIf="showSettings" (click)="closeSettings()">
-        <div class="settings-modal" (click)="$event.stopPropagation()">
+    <!-- Advanced Settings Modal (Redesigned Centered Premium Version) -->
+    <div class="settings-overlay-premium" *ngIf="showSettings" (click)="closeSettings()" @fadeIn>
+        <div class="settings-modal-premium" (click)="$event.stopPropagation()" @scaleIn>
 
-            <!-- MAIN VIEW -->
-            <ng-container *ngIf="settingsView === 'main'">
-                <div class="settings-header">
-                    <h2>Settings</h2>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
+            <!-- Left Navigation Sidebar -->
+            <div class="settings-nav-sidebar">
+                <div class="settings-nav-header">
+                    <h2 class="text-gradient">Settings</h2>
                 </div>
 
-                <div class="setting-search-container">
-                    <input type="text" class="settings-search" placeholder="Search settings">
-                </div>
-
-                <div class="settings-content">
-                    <!-- Profile Card -->
-                    <div class="settings-profile-card" (click)="navigateToSettings('profile')">
-                        <div class="profile-avatar-large">
-                            <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)"
-                                style="width: 100%; height: 100%; object-fit: cover;">
-                            <span *ngIf="!currentUser?.avatar">
-                                {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
-                            </span>
-                        </div>
-                        <div class="profile-info">
-                            <h3>{{ currentUser?.fullName || currentUser?.username }}</h3>
-                            <p class="profile-status">{{ currentUser?.about || 'Busy doing nothing...' }}</p>
-                        </div>
+                <div class="settings-nav-profile" (click)="navigateToSettings('profile')"
+                    [class.active]="settingsView === 'profile'">
+                    <div class="profile-avatar-premium">
+                        <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)">
+                        <span *ngIf="!currentUser?.avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</span>
                     </div>
-
-                    <!-- Menu List -->
-                    <div class="settings-menu">
-                        <!-- General -->
-                        <div class="menu-item" (click)="navigateToSettings('general')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="3" y1="9" x2="21" y2="9"></line>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>General</h4>
-                                <p>Startup and close</p>
-                            </div>
-                        </div>
-
-                        <!-- Account -->
-                        <div class="menu-item" (click)="navigateToSettings('account')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path
-                                    d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
-                                </path>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Account</h4>
-                                <p>Security notifications, account info</p>
-                            </div>
-                        </div>
-
-                        <!-- Privacy -->
-                        <div class="menu-item" (click)="navigateToSettings('privacy')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Privacy</h4>
-                                <p>Blocked contacts, disappearing messages</p>
-                            </div>
-                        </div>
-
-                        <!-- Chats -->
-                        <div class="menu-item" (click)="navigateToSettings('chats')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Chats</h4>
-                                <p>Theme, wallpaper, chat settings</p>
-                            </div>
-                        </div>
-
-                        <!-- Video & Voice -->
-                        <div class="menu-item" (click)="navigateToSettings('video-voice')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Video & voice</h4>
-                                <p>Camera, microphone & speakers</p>
-                            </div>
-                        </div>
-
-
-
-                        <!-- Notifications -->
-                        <div class="menu-item" (click)="navigateToSettings('notifications')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Notifications</h4>
-                                <p>Message notifications</p>
-                            </div>
-                        </div>
-
-                        <!-- Logout -->
-                        <div class="menu-item logout-item" (click)="onLogout()">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16,17 21,12 16,7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Log out</h4>
-                            </div>
-                        </div>
+                    <div class="profile-details">
+                        <h4>{{ currentUser?.fullName || currentUser?.username }}</h4>
+                        <p>My Profile</p>
                     </div>
                 </div>
-            </ng-container>
 
-            <!-- PROFILE VIEW -->
-            <ng-container *ngIf="settingsView === 'profile'">
-                <div class="settings-header profile-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet" class=""
-                            fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M20 12H4"></path>
-                            <path d="M10 18l-6-6 6-6"></path>
+                <div class="settings-nav-items">
+                    <div class="nav-item-premium" (click)="navigateToSettings('general')"
+                        [class.active]="settingsView === 'general'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
                         </svg>
-                        <span class="header-title">Profile</span>
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-
-                <div class="settings-content profile-content-premium animate-fade-in">
-                    <!-- Profile Picture Section -->
-                    <div class="profile-section-centered">
-                        <div class="profile-avatar-large-wrapper" (click)="fileInput.click()">
-                            <!-- Fallback Initials -->
-                            <div *ngIf="!currentUser?.avatar" class="large-avatar">
-                                {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
-                            </div>
-                            <!-- Image -->
-                            <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)"
-                                class="large-avatar-img" alt="Profile Picture">
-
-                            <!-- Hover Overlay -->
-                            <div class="edit-icon-overlay">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path
-                                        d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
-                                    </path>
-                                    <circle cx="12" cy="13" r="4"></circle>
-                                </svg>
-                                <span>CHANGE</span>
-                            </div>
-                        </div>
-                        <input type="file" #fileInput hidden accept="image/*" (change)="onProfilePhotoSelected($event)">
+                        <span>General</span>
                     </div>
-
-                    <!-- Profile Name Section -->
-                    <!-- Profile Name Section -->
-                    <div class="profile-section-group">
-                        <div class="profile-section">
-                            <span class="section-label">Your name</span>
-                            <div class="edit-field" *ngIf="!isEditingName">
-                                <span class="field-value">{{ currentUser?.username }}</span>
-                                <button class="edit-btn" (click)="startEditName()" title="Edit Name">
-                                    <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet"
-                                        class="" fill="currentColor" enable-background="new 0 0 24 24">
-                                        <path
-                                            d="M3.95,16.7v3.4h3.4l9.8-9.9l-3.4-3.4L3.95,16.7z M19.75,7.6c0.4-0.4,0.4-0.9,0-1.3l-2.1-2.1c-0.4-0.4-0.9-0.4-1.3,0l-1.6,1.6l3.4,3.4L19.75,7.6z">
-                                        </path>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="edit-input-wrapper animate-slide-in-right" *ngIf="isEditingName">
-                                <input type="text" [(ngModel)]="tempProfileName" (keyup.enter)="saveName()"
-                                    (keyup.escape)="cancelEditName()" maxlength="100" autofocus>
-                                <span class="char-count" [class.low]="100 - tempProfileName.length < 20">
-                                    {{ 100 - tempProfileName.length }}
-                                </span>
-                                <div class="edit-actions">
-                                    <button class="action-btn cancel" (click)="cancelEditName()" title="Cancel">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn save" (click)="saveName()" title="Save">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <p class="section-note">This is not your username or pin. This name will be visible to your
-                                WhatsApp contacts.</p>
-                        </div>
-
-                        <div class="divider-inset"></div>
-
-                        <!-- Profile About Section -->
-                        <div class="profile-section">
-                            <span class="section-label">About</span>
-                            <div class="edit-field" *ngIf="!isEditingAbout">
-                                <span class="field-value">{{ currentUser?.about || 'Busy doing nothing...' }}</span>
-                                <button class="edit-btn" (click)="startEditAbout()" title="Edit About">
-                                    <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet"
-                                        class="" fill="currentColor" enable-background="new 0 0 24 24">
-                                        <path
-                                            d="M3.95,16.7v3.4h3.4l9.8-9.9l-3.4-3.4L3.95,16.7z M19.75,7.6c0.4-0.4,0.4-0.9,0-1.3l-2.1-2.1c-0.4-0.4-0.9-0.4-1.3,0l-1.6,1.6l3.4,3.4L19.75,7.6z">
-                                        </path>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="edit-input-wrapper animate-slide-in-right" *ngIf="isEditingAbout">
-                                <textarea rows="3" [(ngModel)]="tempProfileAbout" (keyup.enter)="saveAbout()"
-                                    (keyup.escape)="cancelEditAbout()" maxlength="1500" autofocus
-                                    class="edit-textarea"></textarea>
-                                <span class="char-count" [class.low]="1500 - tempProfileAbout.length < 50">
-                                    {{ 1500 - tempProfileAbout.length }}
-                                </span>
-                                <div class="edit-actions">
-                                    <button class="action-btn cancel" (click)="cancelEditAbout()" title="Cancel">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn save" (click)="saveAbout()" title="Save">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </ng-container>
-
-            <!-- CHATS VIEW -->
-            <ng-container *ngIf="settingsView === 'chats'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                    <div class="nav-item-premium" (click)="navigateToSettings('account')"
+                        [class.active]="settingsView === 'account' || settingsView === 'security' || settingsView === 'request-info'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
                         </svg>
-                        Chats
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-
-                    <!-- Display Section -->
-                    <div class="settings-section">
-                        <h3>Display</h3>
-
-                        <!-- Theme -->
-                        <div class="setting-row" (click)="openThemeModal()">
-                            <div class="setting-info">
-                                <h4>Theme</h4>
-                                <p>{{ chatSettings.theme }}</p>
-                            </div>
-                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                            <!-- No chevron implies action, or maybe keep it? Screenshot shows chevron in other rows but maybe not this one? 
-                               Actually screenshot of Chats view usually shows current value. 
-                               Let's keep text and maybe chevron if it opens a dialog. -->
-                        </div>
-
-                        <!-- Wallpaper -->
-                        <div class="setting-row" (click)="openWallpaperModal()">
-                            <div class="setting-info">
-                                <h4>Wallpaper</h4>
-                                <p>Change chat wallpaper</p>
-                            </div>
-                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <div class="divider"></div>
+                        <span>Account</span>
                     </div>
-
-                    <!-- Chat Settings Section -->
-                    <div class="settings-section">
-                        <h3>Chat settings</h3>
-
-                        <!-- Media upload quality -->
-                        <!-- Media upload quality -->
-                        <div class="setting-row" (click)="navigateToSettings('media-quality')">
-                            <div class="setting-info">
-                                <h4>Media upload quality</h4>
-                                <p>{{ chatSettings.mediaQuality }} quality</p>
-                            </div>
-                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- Media auto-download -->
-                        <div class="setting-row" (click)="navigateToSettings('media-auto-download')">
-                            <div class="setting-info">
-                                <h4>Media auto-download</h4>
-                                <p>Voice messages are always automatically downloaded</p>
-                            </div>
-                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-
-
-                        <div class="divider"></div>
-
-                        <!-- Spell Check -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Spell check</h4>
-                                <p>Check spelling while typing</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input" [(ngModel)]="chatSettings.spellCheck"
-                                    (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Replace text with emoji -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Replace text with emoji</h4>
-                                <p>Emoji will replace specific text as you type</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input" [(ngModel)]="chatSettings.replaceEmoji"
-                                    (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Enter is send -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Enter is send</h4>
-                                <p>Enter key will send your message</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input" [(ngModel)]="chatSettings.enterIsSend"
-                                    (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                    </div>
-                </div>
-            </ng-container>
-
-            <!-- MEDIA QUALITY VIEW -->
-            <ng-container *ngIf="settingsView === 'media-quality'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Media upload quality
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="settings-section">
-
-                        <!-- Standard Quality -->
-                        <div class="setting-row radio-row"
-                            (click)="chatSettings.mediaQuality = 'Standard'; saveSettings()">
-                            <div class="setting-info">
-                                <h4>Standard quality</h4>
-                                <p class="description">Standard media uses less storage and are faster to send</p>
-                            </div>
-                            <div class="custom-radio">
-                                <div class="radio-outer" [class.selected]="chatSettings.mediaQuality === 'Standard'">
-                                    <div class="radio-inner" *ngIf="chatSettings.mediaQuality === 'Standard'"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- HD Quality -->
-                        <div class="setting-row radio-row" (click)="chatSettings.mediaQuality = 'HD'; saveSettings()">
-                            <div class="setting-info">
-                                <h4>HD quality</h4>
-                                <p class="description">HD media is slower to send, can be 6 times larger</p>
-                            </div>
-                            <div class="custom-radio">
-                                <div class="radio-outer" [class.selected]="chatSettings.mediaQuality === 'HD'">
-                                    <div class="radio-inner" *ngIf="chatSettings.mediaQuality === 'HD'"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </ng-container>
-
-
-
-            <!-- MEDIA AUTO-DOWNLOAD VIEW -->
-            <ng-container *ngIf="settingsView === 'media-auto-download'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('chats')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Media auto-download
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="settings-section">
-
-                        <!-- Photos -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Photos</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="chatSettings.autoDownload.photos" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Audio -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Audio</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="chatSettings.autoDownload.audio" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Videos -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Videos</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="chatSettings.autoDownload.videos" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Documents -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Documents</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="chatSettings.autoDownload.documents" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <div class="divider"></div>
-
-                        <p class="description" style="padding: 0 20px; color: #8696a0; font-size: 14px;">
-                            Voice messages are always automatically downloaded for the best communication experience.
-                        </p>
-
-                        <div class="setting-row" style="margin-top: 20px; color: #8696a0;"
-                            (click)="resetAutoDownloadSettings()">
-                            <div class="setting-info" style="display: flex; align-items: center; gap: 10px;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                                    <path d="M3 3v5h5"></path>
-                                </svg>
-                                <h4>Reset auto-download settings</h4>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </ng-container>
-
-            <!-- GENERAL SETTINGS VIEW -->
-            <ng-container *ngIf="settingsView === 'general'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        General
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-
-                    <!-- Startup and close -->
-                    <div class="settings-section">
-                        <h3>Startup and close</h3>
-
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Start WhatsApp at login</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input" [(ngModel)]="generalSettings.startAtLogin">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Minimise to system tray</h4>
-                                <p>Keep WhatsApp running after closing the application window</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="generalSettings.minimizeToTray">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Language -->
-                    <div class="settings-section">
-                        <h3>Language</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('language', $event)">
-                            <div class="selected-value">
-                                {{ generalSettings.language }}
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'language'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'language'">
-                                <div class="dropdown-item" [class.selected]="generalSettings.language === 'English'"
-                                    (click)="selectGeneralSetting('language', 'English')">English</div>
-                                <div class="dropdown-item" [class.selected]="generalSettings.language === 'Hindi'"
-                                    (click)="selectGeneralSetting('language', 'Hindi')">Hindi</div>
-                                <div class="dropdown-item" [class.selected]="generalSettings.language === 'Gujarati'"
-                                    (click)="selectGeneralSetting('language', 'Gujarati')">Gujarati</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Font size -->
-                    <div class="settings-section">
-                        <h3>Font size</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('fontSize', $event)">
-                            <div class="selected-value">
-                                {{ generalSettings.fontSize }}
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'fontSize'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'fontSize'">
-                                <div class="dropdown-item"
-                                    [class.selected]="generalSettings.fontSize === '100% (default)'"
-                                    (click)="selectGeneralSetting('fontSize', '100% (default)')">100% (default)</div>
-                                <div class="dropdown-item" [class.selected]="generalSettings.fontSize === '125%'"
-                                    (click)="selectGeneralSetting('fontSize', '125%')">125%</div>
-                                <div class="dropdown-item" [class.selected]="generalSettings.fontSize === '150%'"
-                                    (click)="selectGeneralSetting('fontSize', '150%')">150%</div>
-                            </div>
-                        </div>
-                        <span class="help-text"
-                            style="display:block; margin-top:8px; color:var(--text-secondary); font-size:13px;">Use Ctrl
-                            + / - to increase or decrease text size</span>
-                    </div>
-
-                </div>
-            </ng-container>
-
-            <!-- ACCOUNT SETTINGS VIEW -->
-            <ng-container *ngIf="settingsView === 'account'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Account
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="settings-menu">
-                        <!-- Security notifications -->
-                        <div class="menu-item" (click)="navigateToSettings('security')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Security notifications</h4>
-                            </div>
-                        </div>
-
-                        <!-- Request account info -->
-                        <div class="menu-item" (click)="navigateToSettings('request-info')">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>Request account info</h4>
-                            </div>
-                        </div>
-
-                        <!-- Delete account -->
-                        <div class="menu-item">
-                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                            </svg>
-                            <div class="menu-text">
-                                <h4>How to delete my account</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </ng-container>
-
-            <!-- SECURITY VIEW -->
-            <ng-container *ngIf="settingsView === 'security'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('account')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        Security
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="security-hero">
-                        <svg class="security-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="#10b981" fill-opacity="0.1">
-                            </rect>
+                    <div class="nav-item-premium" (click)="navigateToSettings('privacy')"
+                        [class.active]="settingsView === 'privacy' || settingsView === 'app-lock'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
-                        <h3>Your chats and calls are private</h3>
-                        <p>End-to-end encryption keeps your personal messages and calls between you and the people you
-                            choose. No one outside of the chat, not even WhatsApp, can read, listen to, or share them.
-                            This
-                            includes your:</p>
+                        <span>Privacy</span>
                     </div>
-
-                    <div class="privacy-list">
-                        <div class="privacy-item">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                            Text and voice messages
-                        </div>
-                        <div class="privacy-item">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path
-                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-                                </path>
-                            </svg>
-                            Audio and video calls
-                        </div>
-                        <div class="privacy-item">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>
-                            Photos, videos and documents
-                        </div>
-                        <div class="privacy-item">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                <circle cx="12" cy="10" r="3"></circle>
-                            </svg>
-                            Location sharing
-                        </div>
-                        <div class="privacy-item">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <circle cx="12" cy="12" r="6"></circle>
-                            </svg>
-                            Status updates
-                        </div>
-
-                        <a class="learn-more">Learn more</a>
-                    </div>
-
-                    <div class="security-footer">
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Show security notifications on this computer</h4>
-                                <p style="margin-bottom: 8px;">Get notified when your security code changes for a
-                                    contact's
-                                    phone. If you have multiple devices, this setting must be enabled on each device
-                                    where
-                                    you want to get notifications.</p>
-                                <a class="learn-more">Learn more</a>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="securitySettings.showNotifications">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </ng-container>
-
-            <!-- REQUEST INFO VIEW -->
-            <ng-container *ngIf="settingsView === 'request-info'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('account')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                    <div class="nav-item-premium" (click)="navigateToSettings('chats')"
+                        [class.active]="settingsView === 'chats' || settingsView === 'media-quality' || settingsView === 'media-auto-download'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
-                        Request account info
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="settings-section">
-                        <h3>Account information</h3>
-                        <div class="info-card">
-                            <div class="info-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
-                            </div>
-                            <div class="info-text">
-                                <h4>Request sent</h4>
-                                <p>Ready by January 31, 2026</p>
-                            </div>
-                        </div>
-                        <p class="help-text"
-                            style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin-bottom: 32px;">
-                            Your request will be cancelled if you make changes to your account such as changing your
-                            number
-                            or deleting your account.
-                        </p>
-
-                        <h3>Channels activity</h3>
-                        <div class="report-item">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
-                            <span>Request Channels report</span>
-                        </div>
-
-                        <p class="help-text"
-                            style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin-top: 24px;">
-                            Create a report of updates and information from channels you interact with or manage, which
-                            you
-                            can access or port to another app. <a class="learn-more">Learn more</a>
-                        </p>
+                        <span>Chats</span>
                     </div>
-                </div>
-            </ng-container>
-
-            <!-- PRIVACY VIEW -->
-            <ng-container *ngIf="settingsView === 'privacy'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                    <div class="nav-item-premium" (click)="navigateToSettings('notifications')"
+                        [class.active]="settingsView === 'notifications'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                         </svg>
-                        Privacy
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-
-                    <!-- Section 1: Who can see my personal info -->
-                    <div class="settings-section">
-                        <h3 class="section-title">Who can see my personal info</h3>
-
-                        <!-- Last seen and online -->
-                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('lastSeen', $event)">
-                            <div class="setting-info">
-                                <h4>Last seen and online</h4>
-                                <p>{{ privacySettings.lastSeen }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu floating-left" *ngIf="activeNotifDropdown === 'lastSeen'">
-                                <div class="dropdown-item" [class.selected]="privacySettings.lastSeen === 'Everyone'"
-                                    (click)="selectPrivacySetting('lastSeen', 'Everyone')">Everyone</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.lastSeen === 'My contacts'"
-                                    (click)="selectPrivacySetting('lastSeen', 'My contacts')">My contacts</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.lastSeen === 'Nobody'"
-                                    (click)="selectPrivacySetting('lastSeen', 'Nobody')">Nobody</div>
-                            </div>
-                            <svg class="chevron-icon" [class.open]="activeNotifDropdown === 'lastSeen'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- Profile photo -->
-                        <div class="setting-row dropdown-container"
-                            (click)="toggleNotifDropdown('profilePhoto', $event)">
-                            <div class="setting-info">
-                                <h4>Profile photo</h4>
-                                <p>{{ privacySettings.profilePhoto }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu floating-left"
-                                *ngIf="activeNotifDropdown === 'profilePhoto'">
-                                <div class="dropdown-item"
-                                    [class.selected]="privacySettings.profilePhoto === 'Everyone'"
-                                    (click)="selectPrivacySetting('profilePhoto', 'Everyone')">Everyone</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="privacySettings.profilePhoto === 'My contacts'"
-                                    (click)="selectPrivacySetting('profilePhoto', 'My contacts')">My contacts</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.profilePhoto === 'Nobody'"
-                                    (click)="selectPrivacySetting('profilePhoto', 'Nobody')">Nobody</div>
-                            </div>
-                            <svg class="chevron-icon" [class.open]="activeNotifDropdown === 'profilePhoto'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- About -->
-                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('about', $event)">
-                            <div class="setting-info">
-                                <h4>About</h4>
-                                <p>{{ privacySettings.about }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu floating-left" *ngIf="activeNotifDropdown === 'about'">
-                                <div class="dropdown-item" [class.selected]="privacySettings.about === 'Everyone'"
-                                    (click)="selectPrivacySetting('about', 'Everyone')">Everyone</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.about === 'My contacts'"
-                                    (click)="selectPrivacySetting('about', 'My contacts')">My contacts</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.about === 'Nobody'"
-                                    (click)="selectPrivacySetting('about', 'Nobody')">Nobody</div>
-                            </div>
-                            <svg class="chevron-icon" [class.open]="activeNotifDropdown === 'about'" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- Status -->
-                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('status', $event)">
-                            <div class="setting-info">
-                                <h4>Status</h4>
-                                <p>{{ privacySettings.status }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu floating-left" *ngIf="activeNotifDropdown === 'status'">
-                                <div class="dropdown-item" [class.selected]="privacySettings.status === 'My contacts'"
-                                    (click)="selectPrivacySetting('status', 'My contacts')">My contacts</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="privacySettings.status === 'My contacts except...'"
-                                    (click)="selectPrivacySetting('status', 'My contacts except...')">My contacts
-                                    except...
-                                </div>
-                                <div class="dropdown-item"
-                                    [class.selected]="privacySettings.status === 'Only share with...'"
-                                    (click)="selectPrivacySetting('status', 'Only share with...')">Only share with...
-                                </div>
-                            </div>
-                            <svg class="chevron-icon" [class.open]="activeNotifDropdown === 'status'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <div class="setting-row no-hover">
-                            <div class="setting-info">
-                                <h4>Read receipts</h4>
-                                <p class="description">If turned off, you won't send or receive read receipts. Read
-                                    receipts
-                                    are always sent for group chats.</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input" [(ngModel)]="privacySettings.readReceipts"
-                                    (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
+                        <span>Notifications</span>
                     </div>
-
-                    <hr class="divider">
-
-                    <!-- Section 2: Disappearing messages -->
-                    <div class="settings-section">
-                        <h3 class="section-title">Disappearing messages</h3>
-                        <div class="setting-row dropdown-container"
-                            (click)="toggleNotifDropdown('defaultTimer', $event)">
-                            <div class="setting-info">
-                                <h4>Default message timer</h4>
-                                <p>{{ privacySettings.defaultTimer }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu floating-left"
-                                *ngIf="activeNotifDropdown === 'defaultTimer'">
-                                <div class="dropdown-item" [class.selected]="privacySettings.defaultTimer === 'Off'"
-                                    (click)="selectPrivacySetting('defaultTimer', 'Off')">Off</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="privacySettings.defaultTimer === '24 Hours'"
-                                    (click)="selectPrivacySetting('defaultTimer', '24 Hours')">24 Hours</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.defaultTimer === '7 Days'"
-                                    (click)="selectPrivacySetting('defaultTimer', '7 Days')">7 Days</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.defaultTimer === '90 Days'"
-                                    (click)="selectPrivacySetting('defaultTimer', '90 Days')">90 Days</div>
-                            </div>
-                            <svg class="chevron-icon" [class.open]="activeNotifDropdown === 'defaultTimer'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <hr class="divider">
-
-                    <!-- Section 3: Groups & App Lock -->
-                    <div class="settings-section">
-                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('groups', $event)">
-                            <div class="setting-info">
-                                <h4>Groups</h4>
-                                <p>{{ privacySettings.groups }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu floating-left" *ngIf="activeNotifDropdown === 'groups'">
-                                <div class="dropdown-item" [class.selected]="privacySettings.groups === 'Everyone'"
-                                    (click)="selectPrivacySetting('groups', 'Everyone')">Everyone</div>
-                                <div class="dropdown-item" [class.selected]="privacySettings.groups === 'My contacts'"
-                                    (click)="selectPrivacySetting('groups', 'My contacts')">My contacts</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="privacySettings.groups === 'My contacts except...'"
-                                    (click)="selectPrivacySetting('groups', 'My contacts except...')">My contacts
-                                    except...
-                                </div>
-                            </div>
-                            <svg class="chevron-icon" [class.open]="activeNotifDropdown === 'groups'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- Blocked contacts skipped as requested -->
-
-                        <div class="setting-row" (click)="navigateToSettings('app-lock')">
-                            <div class="setting-info">
-                                <h4>App lock</h4>
-                                <p class="description">Require password to unlock WhatsApp</p>
-                            </div>
-                            <div style="display: flex; align-items: center;">
-                                <span style="color: #94a3b8; font-size: 14px; margin-right: 8px;">{{
-                                    privacySettings.appLock
-                                    ? 'Enabled' : 'Disabled' }}</span>
-                                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="divider">
-
-                    <!-- Section 4: Advanced -->
-                    <div class="settings-section">
-                        <h3 class="section-title">Advanced</h3>
-                        <div class="setting-row no-hover">
-                            <div class="setting-info">
-                                <h4>Block unknown account messages</h4>
-                                <p class="description">To protect your account and improve device performance, WhatsApp
-                                    will
-                                    block messages from unknown accounts if they exceed a certain volume. <a
-                                        class="learn-more">Learn more</a></p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="privacySettings.blockUnknownMessages" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                </div>
-            </ng-container>
-
-
-            <!-- NOTIFICATIONS VIEW -->
-            <ng-container *ngIf="settingsView === 'notifications'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                    <div class="nav-item-premium" (click)="navigateToSettings('video-voice')"
+                        [class.active]="settingsView === 'video-voice'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                         </svg>
-                        Notifications
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="settings-section">
-
-                        <!-- Show notification banner -->
-                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('banner', $event)">
-                            <div class="setting-info">
-                                <h4>Show notification banner</h4>
-                                <p>{{ notificationSettings.showBanner }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu" *ngIf="activeNotifDropdown === 'banner'">
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.showBanner === 'Always'"
-                                    (click)="selectNotifSetting('showBanner', 'Always')">Always</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.showBanner === 'When app is open'"
-                                    (click)="selectNotifSetting('showBanner', 'When app is open')">When app is open
-                                </div>
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.showBanner === 'Never'"
-                                    (click)="selectNotifSetting('showBanner', 'Never')">Never</div>
-                            </div>
-                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <!-- Show taskbar notification badge -->
-                        <div class="setting-row dropdown-container" (click)="toggleNotifDropdown('badge', $event)">
-                            <div class="setting-info">
-                                <h4>Show taskbar notification badge</h4>
-                                <p>{{ notificationSettings.showTaskbarBadge }}</p>
-                            </div>
-                            <div class="custom-dropdown-menu" *ngIf="activeNotifDropdown === 'badge'">
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.showTaskbarBadge === 'Always'"
-                                    (click)="selectNotifSetting('showTaskbarBadge', 'Always')">Always</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.showTaskbarBadge === 'When app is open'"
-                                    (click)="selectNotifSetting('showTaskbarBadge', 'When app is open')">When app is
-                                    open</div>
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.showTaskbarBadge === 'Never'"
-                                    (click)="selectNotifSetting('showTaskbarBadge', 'Never')">Never</div>
-                            </div>
-                            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </div>
-
-                        <hr class="divider">
-
-                        <h3>Messages</h3>
-
-                        <!-- Message notifications -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Message notifications</h4>
-                                <p>Show notifications for new messages</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.messageNotifications" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Show previews -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Show previews</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.showPreviews" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Show reaction notifications -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Show reaction notifications</h4>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.reactionNotifications" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Status reactions -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Status reactions</h4>
-                                <p>Show notifications when you get likes on a status</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.statusReactions" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <hr class="divider">
-
-                        <h3>Calls</h3>
-
-                        <!-- Call notifications -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Call notifications</h4>
-                                <p>Show notifications for incoming calls</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.callNotifications" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Incoming calls -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Incoming calls</h4>
-                                <p>Play sounds for incoming calls</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.incomingCallSounds" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <hr class="divider">
-
-                        <h3>Notification tones</h3>
-
-                        <!-- Incoming sounds -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Incoming sounds</h4>
-                                <p>Play sounds for incoming messages</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.incomingSounds" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <!-- Outgoing sounds -->
-                        <div class="checkbox-row">
-                            <div class="checkbox-info">
-                                <h4>Outgoing sounds</h4>
-                                <p>Play sounds for outgoing messages</p>
-                            </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input"
-                                    [(ngModel)]="notificationSettings.outgoingSounds" (change)="saveSettings()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <br>
-
-                        <!-- Messages Tone -->
-                        <h3>Messages</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('messageTone', $event)">
-                            <div class="selected-value">
-                                <svg class="tone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M9 18V5l12-2v13"></path>
-                                    <circle cx="6" cy="18" r="3"></circle>
-                                    <circle cx="18" cy="16" r="3"></circle>
-                                </svg>
-                                {{ notificationSettings.messageTone }}
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'messageTone'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'messageTone'">
-                                <div class="dropdown-item"
-                                    [class.selected]="notificationSettings.messageTone === 'None'"
-                                    (click)="selectNotifSetting('messageTone', 'None')">None</div>
-                                <div class="dropdown-item" *ngFor="let tone of notificationTones"
-                                    [class.selected]="notificationSettings.messageTone === tone"
-                                    (click)="selectNotifSetting('messageTone', tone)">{{ tone }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Group Messages Tone -->
-                        <h3>Group messages</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('groupTone', $event)">
-                            <div class="selected-value">
-                                <svg class="tone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                </svg>
-                                {{ notificationSettings.groupTone }}
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'groupTone'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'groupTone'">
-                                <div class="dropdown-item" [class.selected]="notificationSettings.groupTone === 'None'"
-                                    (click)="selectNotifSetting('groupTone', 'None')">None</div>
-                                <div class="dropdown-item" *ngFor="let tone of notificationTones"
-                                    [class.selected]="notificationSettings.groupTone === tone"
-                                    (click)="selectNotifSetting('groupTone', tone)">{{ tone }}</div>
-                            </div>
-                        </div>
-
+                        <span>Video & Voice</span>
                     </div>
                 </div>
-            </ng-container>
-            <!-- VIDEO & VOICE VIEW -->
-            <ng-container *ngIf="settingsView === 'video-voice'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('main')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+
+                <div class="settings-nav-footer">
+                    <button class="logout-btn-premium" (click)="onLogout()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
                         </svg>
-                        Video & voice
+                        <span>Log out</span>
                     </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
                 </div>
-                <div class="settings-content">
-                    <div class="settings-section">
-                        <h3>Camera</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('camera', $event)"
-                            [style.zIndex]="activeNotifDropdown === 'camera' ? 100 : 1">
-                            <div class="selected-value">
-                                <ng-container *ngFor="let device of videoInputDevices">
-                                    <ng-container *ngIf="device.deviceId === videoSettings.cameraDeviceId">{{
-                                        device.label }}</ng-container>
-                                </ng-container>
-                                <span *ngIf="!videoSettings.cameraDeviceId">Select Camera</span>
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'camera'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'camera'">
-                                <div class="dropdown-item" *ngFor="let device of videoInputDevices"
-                                    [class.selected]="videoSettings.cameraDeviceId === device.deviceId"
-                                    (click)="selectVideoSetting('cameraDeviceId', device.deviceId)">{{ device.label }}
-                                </div>
-                                <div class="dropdown-item" *ngIf="videoInputDevices.length === 0"
-                                    style="cursor: default; opacity: 0.6;">
-                                    No cameras found
-                                </div>
-                            </div>
-                        </div>
+            </div>
 
-                        <h3>Microphone</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('microphone', $event)"
-                            [style.zIndex]="activeNotifDropdown === 'microphone' ? 100 : 1">
-                            <div class="selected-value">
-                                <ng-container *ngFor="let device of audioInputDevices">
-                                    <ng-container *ngIf="device.deviceId === videoSettings.micDeviceId">{{ device.label
-                                        }}</ng-container>
-                                </ng-container>
-                                <span *ngIf="!videoSettings.micDeviceId">Select Microphone</span>
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'microphone'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'microphone'">
-                                <div class="dropdown-item" *ngFor="let device of audioInputDevices"
-                                    [class.selected]="videoSettings.micDeviceId === device.deviceId"
-                                    (click)="selectVideoSetting('micDeviceId', device.deviceId)">{{ device.label }}
-                                </div>
-                                <div class="dropdown-item" *ngIf="audioInputDevices.length === 0"
-                                    style="cursor: default; opacity: 0.6;">
-                                    No microphones found
-                                </div>
-                            </div>
-                        </div>
+            <!-- Right Content Area -->
+            <div class="settings-main-content">
+                <button class="settings-close-x" (click)="closeSettings()">×</button>
 
-                        <h3>Speakers</h3>
-                        <div class="custom-select-box" (click)="toggleNotifDropdown('speakers', $event)"
-                            [style.zIndex]="activeNotifDropdown === 'speakers' ? 100 : 1">
-                            <div class="selected-value">
-                                <ng-container *ngFor="let device of audioOutputDevices">
-                                    <ng-container *ngIf="device.deviceId === videoSettings.speakerDeviceId">{{
-                                        device.label }}</ng-container>
-                                </ng-container>
-                                <span *ngIf="!videoSettings.speakerDeviceId">Select Speakers</span>
-                            </div>
-                            <svg class="chevron-down" [class.open]="activeNotifDropdown === 'speakers'"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
+                <div class="view-container" [ngSwitch]="settingsView">
+
+                    <!-- MAIN WELCOME VIEW -->
+                    <div *ngSwitchCase="'main'" class="welcome-view animate-fade-in">
+                        <div class="welcome-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                             </svg>
-                            <div class="custom-dropdown-menu floating" *ngIf="activeNotifDropdown === 'speakers'">
-                                <div class="dropdown-item" *ngFor="let device of audioOutputDevices"
-                                    [class.selected]="videoSettings.speakerDeviceId === device.deviceId"
-                                    (click)="selectVideoSetting('speakerDeviceId', device.deviceId)">{{ device.label }}
-                                </div>
-                                <div class="dropdown-item" *ngIf="audioOutputDevices.length === 0"
-                                    style="cursor: default; opacity: 0.6;">
-                                    No speakers found
-                                </div>
+                        </div>
+                        <h2>Secure & Personal</h2>
+                        <p>Customize your experience, manage your account, and keep your conversations private.</p>
+                        <div class="quick-links">
+                            <div class="quick-link-card" (click)="navigateToSettings('privacy')">
+                                <h4>Privacy Checkup</h4>
+                                <p>Review your security settings</p>
+                            </div>
+                            <div class="quick-link-card" (click)="navigateToSettings('chats')">
+                                <h4>Personalize</h4>
+                                <p>Change theme and wallpaper</p>
                             </div>
                         </div>
                     </div>
-                </div>
-            </ng-container>
 
-            <!-- APP LOCK VIEW -->
-            <ng-container *ngIf="settingsView === 'app-lock'">
-                <div class="settings-header">
-                    <button class="back-btn" (click)="navigateToSettings('privacy')">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                        App lock
-                    </button>
-                    <button class="close-btn" (click)="closeSettings()">×</button>
-                </div>
-                <div class="settings-content">
-                    <div class="lock-hero">
-                        <div class="lock-icon-container">
-                            <svg class="lock-icon-large" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 2C9.243 2 7 4.243 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.757-2.243-5-5-5zm6 10v8H6v-8h12zm-9-5V7c0-1.654 1.346-3 3-3s3 1.346 3 3v3H9z" />
-                            </svg>
-                            <div class="lock-badge">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                    <circle cx="12" cy="12" r="3"></circle>
+                    <!-- PROFILE VIEW -->
+                    <div *ngSwitchCase="'profile'" class="profile-view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
                                 </svg>
+                            </button>
+                            <h2>Profile</h2>
+                        </div>
+
+                        <div class="profile-content-scroll">
+                            <div class="profile-avatar-section">
+                                <div class="profile-avatar-giant-wrapper" (click)="fileInput.click()">
+                                    <div *ngIf="!currentUser?.avatar" class="giant-avatar">
+                                        {{ currentUser?.username?.charAt(0)?.toUpperCase() }}
+                                    </div>
+                                    <img *ngIf="currentUser?.avatar" [src]="getProfileAvatar(currentUser)"
+                                        class="giant-avatar-img">
+                                    <div class="edit-overlay-giant">
+                                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path
+                                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                            </path>
+                                            <circle cx="12" cy="13" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <input type="file" #fileInput hidden accept="image/*"
+                                    (change)="onProfilePhotoSelected($event)">
+                            </div>
+
+                            <div class="profile-info-grid">
+                                <div class="profile-card">
+                                    <label>Display Name</label>
+                                    <div class="editable-field" *ngIf="!isEditingName">
+                                        <span>{{ currentUser?.fullName || currentUser?.username }}</span>
+                                        <button class="edit-icon-btn" (click)="startEditName()">
+                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="edit-mode" *ngIf="isEditingName">
+                                        <input type="text" [(ngModel)]="tempProfileName" (keyup.enter)="saveName()"
+                                            (keyup.escape)="cancelEditName()" maxlength="100" autofocus>
+                                        <div class="edit-btns">
+                                            <button class="check-btn" (click)="saveName()">✓</button>
+                                            <button class="x-btn" (click)="cancelEditName()">✕</button>
+                                        </div>
+                                    </div>
+                                    <p class="field-hint">This name will be visible to your contacts.</p>
+                                </div>
+
+                                <div class="profile-card">
+                                    <label>About</label>
+                                    <div class="editable-field" *ngIf="!isEditingAbout">
+                                        <span>{{ currentUser?.about || 'Busy doing nothing...' }}</span>
+                                        <button class="edit-icon-btn" (click)="startEditAbout()">
+                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="edit-mode" *ngIf="isEditingAbout">
+                                        <textarea rows="3" [(ngModel)]="tempProfileAbout"
+                                            (keyup.escape)="cancelEditAbout()" maxlength="1500" autofocus></textarea>
+                                        <div class="edit-btns vertical">
+                                            <button class="check-btn" (click)="saveAbout()">✓</button>
+                                            <button class="x-btn" (click)="cancelEditAbout()">✕</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <h2 class="lock-title">Lock with a password</h2>
-                        <p class="lock-description">
-                            You can lock WhatsApp instead of logging out. This makes it easier to access again later. <a
-                                class="learn-more">Learn more</a>
-                        </p>
                     </div>
 
-                    <div class="settings-section">
-                        <div class="setting-row no-hover">
-                            <div class="setting-info">
-                                <h4>Enable app lock</h4>
+
+                    <!-- CHATS VIEW -->
+                    <div *ngSwitchCase="'chats'" class="chats-view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Chats</h2>
+                        </div>
+
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <h3>Display</h3>
+                                <div class="setting-item-premium" (click)="openThemeModal()">
+                                    <div class="setting-item-info">
+                                        <h4>Theme</h4>
+                                        <p>{{ chatSettings.theme }}</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="setting-item-premium" (click)="openWallpaperModal()">
+                                    <div class="setting-item-info">
+                                        <h4>Wallpaper</h4>
+                                        <p>Personalize your chat background</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
                             </div>
-                            <label class="switch-container">
-                                <input type="checkbox" class="switch-input" [(ngModel)]="privacySettings.appLock"
-                                    (change)="toggleAppLock($event)">
-                                <span class="switch-slider"></span>
-                            </label>
+
+                            <div class="settings-card-premium">
+                                <h3>Media Settings</h3>
+                                <div class="setting-item-premium" (click)="navigateToSettings('media-quality')">
+                                    <div class="setting-item-info">
+                                        <h4>Media upload quality</h4>
+                                        <p>{{ chatSettings.mediaQuality }} quality</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="setting-item-premium" (click)="navigateToSettings('media-auto-download')">
+                                    <div class="setting-item-info">
+                                        <h4>Media auto-download</h4>
+                                        <p>Manage automatic media downloads</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="settings-card-premium">
+                                <h3>Typing</h3>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Spell check</h4>
+                                        <p>Check spelling while typing</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="chatSettings.spellCheck"
+                                            (change)="saveSettings()">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Enter is send</h4>
+                                        <p>Use enter key to send messages</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="chatSettings.enterIsSend"
+                                            (change)="saveSettings()">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="lock-footer">
-                        <p>When app lock is enabled you can lock WhatsApp from the Chats menu.</p>
-                        <p>You won't get notifications when WhatsApp is locked. App lock will reset if you log out.</p>
+                    <!-- MEDIA QUALITY VIEW -->
+                    <div *ngSwitchCase="'media-quality'" class="sub-view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('chats')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Media upload quality</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <p class="section-desc">HD media is clearer, but can use more space and take longer to send.
+                            </p>
+                            <div class="radio-group-premium">
+                                <div class="radio-item-premium"
+                                    [class.active]="chatSettings.mediaQuality === 'Standard'"
+                                    (click)="chatSettings.mediaQuality = 'Standard'; saveSettings()">
+                                    <div class="radio-info">
+                                        <h4>Standard quality</h4>
+                                        <p>Faster to send, uses less storage</p>
+                                    </div>
+                                    <div class="radio-check" *ngIf="chatSettings.mediaQuality === 'Standard'">✓</div>
+                                </div>
+                                <div class="radio-item-premium" [class.active]="chatSettings.mediaQuality === 'HD'"
+                                    (click)="chatSettings.mediaQuality = 'HD'; saveSettings()">
+                                    <div class="radio-info">
+                                        <h4>HD quality</h4>
+                                        <p>Clearer images and videos</p>
+                                    </div>
+                                    <div class="radio-check" *ngIf="chatSettings.mediaQuality === 'HD'">✓</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </ng-container>
 
-        </div>
+                    <!-- MEDIA AUTO-DOWNLOAD VIEW -->
+                    <div *ngSwitchCase="'media-auto-download'" class="sub-view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('chats')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Media auto-download</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <div class="setting-item-premium no-click"
+                                    *ngFor="let key of ['photos', 'audio', 'videos', 'documents']">
+                                    <div class="setting-item-info">
+                                        <h4 style="text-transform: capitalize;">{{ key }}</h4>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="chatSettings.autoDownload[key]"
+                                            (change)="saveSettings()">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="field-hint">Voice messages are always automatically downloaded for the best
+                                experience.</p>
+                        </div>
+                    </div>
 
-    </div>
+                    <!-- GENERAL VIEW -->
+                    <div *ngSwitchCase="'general'" class="view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>General</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <h3>Startup</h3>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Start at login</h4>
+                                        <p>Open the app automatically</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="generalSettings.startAtLogin">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Minimize to tray</h4>
+                                        <p>Keep app running in background</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="generalSettings.minimizeToTray">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="settings-card-premium">
+                                <h3>Appearance</h3>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'language'"
+                                    (click)="toggleNotifDropdown('language', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Language</h4>
+                                        <p>{{ generalSettings.language }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'language'">
+                                            <div class="dropdown-item"
+                                                (click)="selectGeneralSetting('language', 'English')">English</div>
+                                            <div class="dropdown-item"
+                                                (click)="selectGeneralSetting('language', 'Hindi')">Hindi</div>
+                                            <div class="dropdown-item"
+                                                (click)="selectGeneralSetting('language', 'Gujarati')">Gujarati</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PRIVACY VIEW -->
+                    <div *ngSwitchCase="'privacy'" class="view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Privacy</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <h3>Visibility</h3>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'lastSeen'"
+                                    (click)="toggleNotifDropdown('lastSeen', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Last seen & online</h4>
+                                        <p>{{ privacySettings.lastSeen }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'lastSeen'">
+                                            <div class="dropdown-item"
+                                                *ngFor="let option of ['Everyone', 'My contacts', 'Nobody']"
+                                                (click)="selectPrivacySetting('lastSeen', option)">{{ option }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="setting-item-premium"
+                                    [class.active]="activeNotifDropdown === 'profilePhoto'"
+                                    (click)="toggleNotifDropdown('profilePhoto', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Profile photo</h4>
+                                        <p>{{ privacySettings.profilePhoto }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu"
+                                            *ngIf="activeNotifDropdown === 'profilePhoto'">
+                                            <div class="dropdown-item"
+                                                *ngFor="let option of ['Everyone', 'My contacts', 'Nobody']"
+                                                (click)="selectPrivacySetting('profilePhoto', option)">{{ option }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'about'"
+                                    (click)="toggleNotifDropdown('about', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>About</h4>
+                                        <p>{{ privacySettings.about }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'about'">
+                                            <div class="dropdown-item"
+                                                *ngFor="let option of ['Everyone', 'My contacts', 'Nobody']"
+                                                (click)="selectPrivacySetting('about', option)">{{ option }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'groups'"
+                                    (click)="toggleNotifDropdown('groups', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Groups</h4>
+                                        <p>{{ privacySettings.groups }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'groups'">
+                                            <div class="dropdown-item"
+                                                *ngFor="let option of ['Everyone', 'My contacts', 'My contacts except...']"
+                                                (click)="selectPrivacySetting('groups', option)">{{ option }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="settings-card-premium">
+                                <h3>Security</h3>
+                                <div class="setting-item-premium" (click)="navigateToSettings('app-lock')">
+                                    <div class="setting-item-info">
+                                        <h4>App lock</h4>
+                                        <p>{{ privacySettings.appLock ? 'Enabled' : 'Disabled' }}</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Read receipts</h4>
+                                        <p>If turned off, you won't send or receive read receipts</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="privacySettings.readReceipts"
+                                            (change)="saveSettings()">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ACCOUNT VIEW -->
+                    <div *ngSwitchCase="'account'" class="view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Account</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <div class="setting-item-premium" (click)="navigateToSettings('security')">
+                                    <div class="setting-item-icon-box blue"><svg viewBox="0 0 24 24" width="20"
+                                            height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        </svg></div>
+                                    <div class="setting-item-info">
+                                        <h4>Security notifications</h4>
+                                        <p>End-to-end encryption details</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                        stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="setting-item-premium" (click)="navigateToSettings('request-info')">
+                                    <div class="setting-item-icon-box purple"><svg viewBox="0 0 24 24" width="20"
+                                            height="20" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg></div>
+                                    <div class="setting-item-info">
+                                        <h4>Request account info</h4>
+                                        <p>Request a report of your account info</p>
+                                    </div>
+                                    <svg class="chevron-right" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                        stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECURITY VIEW -->
+                    <div *ngSwitchCase="'security'" class="sub-view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('account')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Security</h2>
+                        </div>
+                        <div class="settings-content-premium center">
+                            <div class="security-banner">
+                                <div class="security-shield-icon">
+                                    <svg viewBox="0 0 24 24" width="60" height="60" fill="none" stroke="var(--primary)"
+                                        stroke-width="1.5">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    </svg>
+                                </div>
+                                <h3>Your privacy is our priority</h3>
+                                <p>WhatsApp secures your conversations with end-to-end encryption. This means your
+                                    messages, calls, and status updates stay between you and the people you choose.</p>
+                            </div>
+
+                            <div class="settings-card-premium">
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Show security notifications</h4>
+                                        <p>Get notified when a contact's security code changes</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="securitySettings.showNotifications">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- REQUEST INFO VIEW -->
+                    <div *ngSwitchCase="'request-info'" class="sub-view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('account')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Request Account Info</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="request-info-card">
+                                <div class="card-icon-main">
+                                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--primary)"
+                                        stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                </div>
+                                <h3>Request Sent</h3>
+                                <p>Your report will be ready in about 3 days. You'll have a few weeks to download it
+                                    after it's available.</p>
+                                <div class="request-status-badge">Processing...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NOTIFICATIONS VIEW -->
+                    <div *ngSwitchCase="'notifications'" class="view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Notifications</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <h3>General</h3>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Message notifications</h4>
+                                        <p>Show notifications for new messages</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="notificationSettings.messageNotifications"
+                                            (change)="saveSettings()">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Show previews</h4>
+                                        <p>Preview message text in notifications</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="notificationSettings.showPreviews"
+                                            (change)="saveSettings()">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="settings-card-premium">
+                                <h3>Sounds</h3>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'messageTone'"
+                                    (click)="toggleNotifDropdown('messageTone', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Message tone</h4>
+                                        <p>{{ notificationSettings.messageTone }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-down" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu"
+                                            *ngIf="activeNotifDropdown === 'messageTone'">
+                                            <div class="dropdown-item" *ngFor="let tone of notificationTones"
+                                                (click)="selectNotifSetting('messageTone', tone)">{{ tone }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO & VOICE VIEW -->
+                    <div *ngSwitchCase="'video-voice'" class="view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('main')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>Video & Voice</h2>
+                        </div>
+                        <div class="settings-content-premium">
+                            <div class="settings-card-premium">
+                                <h3>Devices</h3>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'camera'"
+                                    (click)="toggleNotifDropdown('camera', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Camera</h4>
+                                        <p>{{ videoSettings.cameraDeviceId ? 'Selected' : 'None' }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-down" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'camera'">
+                                            <div class="dropdown-item" *ngFor="let device of videoInputDevices"
+                                                (click)="selectVideoSetting('cameraDeviceId', device.deviceId)">
+                                                {{ device.label }}
+                                            </div>
+                                            <div class="dropdown-item" *ngIf="videoInputDevices.length === 0">No cameras
+                                                found</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'microphone'"
+                                    (click)="toggleNotifDropdown('microphone', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Microphone</h4>
+                                        <p>{{ videoSettings.micDeviceId ? 'Selected' : 'None' }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-down" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'microphone'">
+                                            <div class="dropdown-item" *ngFor="let device of audioInputDevices"
+                                                (click)="selectVideoSetting('micDeviceId', device.deviceId)">
+                                                {{ device.label }}
+                                            </div>
+                                            <div class="dropdown-item" *ngIf="audioInputDevices.length === 0">No
+                                                microphones found</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="setting-item-premium" [class.active]="activeNotifDropdown === 'speakers'"
+                                    (click)="toggleNotifDropdown('speakers', $event)">
+                                    <div class="setting-item-info">
+                                        <h4>Speakers</h4>
+                                        <p>{{ videoSettings.speakerDeviceId ? 'Selected' : 'None' }}</p>
+                                    </div>
+                                    <div class="custom-dropdown-container">
+                                        <svg class="chevron-down" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        <div class="premium-dropdown-menu" *ngIf="activeNotifDropdown === 'speakers'">
+                                            <div class="dropdown-item" *ngFor="let device of audioOutputDevices"
+                                                (click)="selectVideoSetting('speakerDeviceId', device.deviceId)">
+                                                {{ device.label }}
+                                            </div>
+                                            <div class="dropdown-item" *ngIf="audioOutputDevices.length === 0">No
+                                                speakers found</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- APP LOCK VIEW -->
+                    <div *ngSwitchCase="'app-lock'" class="view-premium animate-fade-in">
+                        <div class="settings-view-header">
+                            <button class="back-btn-premium" (click)="navigateToSettings('privacy')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <h2>App Lock</h2>
+                        </div>
+                        <div class="settings-content-premium center">
+                            <div class="lock-setup-banner">
+                                <div class="lock-shield-icon">
+                                    <svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="var(--primary)"
+                                        stroke-width="1.5">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </div>
+                                <h3>Protect your messages</h3>
+                                <p>When enabled, you'll need to enter your password to use WhatsApp. You can still
+                                    answer calls even if WhatsApp is locked.</p>
+                            </div>
+
+                            <div class="settings-card-premium">
+                                <div class="setting-item-premium no-click">
+                                    <div class="setting-item-info">
+                                        <h4>Enable app lock</h4>
+                                        <p>Require password to unlock the app</p>
+                                    </div>
+                                    <label class="premium-switch">
+                                        <input type="checkbox" [(ngModel)]="privacySettings.appLock"
+                                            (change)="toggleAppLock($event)">
+                                        <span class="premium-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End of App Lock -->
+                </div> <!-- End of view-container -->
+            </div> <!-- End of settings-main-content -->
+        </div> <!-- End of settings-modal-premium -->
+    </div> <!-- End of settings-overlay-premium -->
 
     <div class="modal-overlay" *ngIf="showSetPasswordModal">
         <div class="set-password-modal animate-scale-in">
@@ -2642,7 +2043,8 @@
                     <div class="user-avatar">
                         <img *ngIf="user.avatar" [src]="getAvatarUrl(user.avatar)" (error)="handleImageError($event)"
                             alt="Avatar">
-                        <span class="avatar-fallback" [style.display]="user.avatar ? 'none' : 'flex'">{{ (user?.username
+                        <span class="avatar-fallback" [style.display]="user.avatar ? 'none' : 'flex'">{{
+                            (user?.username
                             || '').charAt(0).toUpperCase() }}</span>
                     </div>
                     <div class="user-details">
@@ -2712,7 +2114,8 @@
                                 <div *ngIf="user._id === userId" class="thumb-container">
                                     <div class="avatar-sm">
                                         <img *ngIf="user.avatar" [src]="getAvatarUrl(user.avatar)">
-                                        <span *ngIf="!user.avatar">{{ user?.username?.charAt(0)?.toUpperCase() }}</span>
+                                        <span *ngIf="!user.avatar">{{ user?.username?.charAt(0)?.toUpperCase()
+                                            }}</span>
                                     </div>
                                     <span class="name-sm">{{ user.username }}</span>
                                 </div>
@@ -2832,7 +2235,8 @@
                             </div>
                             <div class="user-details">
                                 <div class="user-name">{{ user?.fullName || user?.username }}</div>
-                                <div class="user-bio">{{ user?.about || 'Hey there! I am using WhatsApp.' }}</div>
+                                <div class="user-bio">{{ user?.about || 'Hey there! I am using WhatsApp.' }}
+                                </div>
                             </div>
                         </ng-container>
                     </div>
@@ -2886,12 +2290,15 @@
                     style="width: 45px; height: 45px; border-radius: 50%; background: var(--glass-light); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--text-main);">
                     <img *ngIf="user.avatar" [src]="getAvatarUrl(user.avatar)" (error)="handleImageError($event)"
                         style="width: 100%; height: 100%; object-fit: cover;">
-                    <span class="avatar-fallback" [style.display]="user.avatar ? 'none' : 'flex'">{{ (user?.username ||
+                    <span class="avatar-fallback" [style.display]="user.avatar ? 'none' : 'flex'">{{
+                        (user?.username ||
                         '').charAt(0).toUpperCase() }}</span>
                 </div>
                 <div style="flex: 1;">
-                    <div style="color: var(--text-main); font-weight: 500;">{{ user.fullName || user.username }}</div>
-                    <div style="color: var(--text-muted); font-size: 0.85rem;">{{ user.about || 'Available' }}</div>
+                    <div style="color: var(--text-main); font-weight: 500;">{{ user.fullName || user.username }}
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">{{ user.about || 'Available' }}
+                    </div>
                 </div>
                 <div class="custom-checkbox" [class.checked]="selectedParticipants.has(user._id)"
                     style="width: 20px; height: 20px; border: 2px solid var(--border-subtle); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
@@ -3083,7 +2490,8 @@
             <div class="info-row">
                 <span class="label">Status:</span>
                 <span class="value status" [class.read]="selectedMessageInfo.seen">
-                    {{ selectedMessageInfo.seen ? "Read" : (selectedMessageInfo.delivered ? "Delivered" : "Sent") }}
+                    {{ selectedMessageInfo.seen ? "Read" : (selectedMessageInfo.delivered ? "Delivered" :
+                    "Sent") }}
                 </span>
             </div>
             <div class="info-row" *ngIf="selectedMessageInfo.seenAt">
@@ -3092,7 +2500,8 @@
             </div>
             <div class="info-row">
                 <span class="label">Message Type:</span>
-                <span class="value" style="text-transform: capitalize;">{{ selectedMessageInfo.messageType }}</span>
+                <span class="value" style="text-transform: capitalize;">{{ selectedMessageInfo.messageType
+                    }}</span>
             </div>
         </div>
         <div class="modal-footer">
@@ -3113,7 +2522,8 @@
         </div>
         <div class="modal-body"
             style="padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center;">
-            <p style="margin-bottom: 20px; color: #8696a0;">Scan this code with your mobile camera to log in instantly.
+            <p style="margin-bottom: 20px; color: #8696a0;">Scan this code with your mobile camera to log in
+                instantly.
             </p>
 
             <div class="qr-container"
@@ -3158,7 +2568,8 @@
                     </div>
                 </div>
                 <h2>{{ selectedUser?.fullName || selectedUser?.username }}</h2>
-                <span class="group-status-text" [class.online]="selectedUser?.isOnline">{{ selectedUser?.isOnline ?
+                <span class="group-status-text" [class.online]="selectedUser?.isOnline">{{
+                    selectedUser?.isOnline ?
                     'Online' : 'Offline' }}</span>
 
                 <!-- Quick Actions like in image -->
@@ -3200,7 +2611,8 @@
             <div class="group-info-section">
                 <div class="info-item">
                     <div class="info-label">About</div>
-                    <div class="info-value about-text">{{ selectedUser?.about || '(^._.^) ram ram bhai saryane' }}</div>
+                    <div class="info-value about-text">{{ selectedUser?.about || '(^._.^) ram ram bhai saryane'
+                        }}</div>
                 </div>
             </div>
 

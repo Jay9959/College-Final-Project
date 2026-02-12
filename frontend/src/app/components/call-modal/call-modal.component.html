@@ -34,7 +34,7 @@
         <!-- Video Mode -->
         <ng-container *ngIf="callType === 'video'">
             <video #remoteVideo autoplay playsinline class="remote-video"></video>
-            <video #localVideo autoplay playsinline muted class="local-video"></video>
+            <video #localVideo autoplay playsinline muted class="local-video" [style.filter]="selectedFilter"></video>
         </ng-container>
 
         <!-- Audio Mode -->
@@ -49,7 +49,25 @@
             <audio #remoteVideo autoplay></audio> <!-- Still needed for audio track, but hidden or styled -->
         </div>
 
+        <!-- Filter Menu -->
+        <div class="filter-menu animate-scale-in" *ngIf="showFilterMenu && callType === 'video'">
+            <div class="filter-options">
+                <button *ngFor="let filter of availableFilters" class="filter-btn"
+                    [class.active]="selectedFilter === filter.value" (click)="applyFilter(filter.value)">
+                    {{ filter.name }}
+                </button>
+            </div>
+        </div>
+
         <div class="call-controls">
+            <!-- Filter Button (only for video) -->
+            <button class="control-btn" *ngIf="callType === 'video'" [class.active]="showFilterMenu"
+                (click)="toggleFilterMenu()" title="Filters">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+            </button>
+
             <button class="control-btn" [class.active]="!audioEnabled" (click)="toggleAudio()">
                 <svg *ngIf="audioEnabled" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2">

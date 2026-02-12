@@ -4,7 +4,7 @@ import { HttpClientModule, HttpEventType } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, Subject, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, finalize } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { SocketService } from '../../services/socket.service';
 import { ChatService } from '../../services/chat.service';
@@ -27,6 +27,8 @@ import { CallModalComponent } from '../call-modal/call-modal.component';
 })
 export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
+
+    socketListenersSetup = false;
 
     // --- Translation State ---
     translatedMessages: { [key: string]: string } = {};
@@ -99,7 +101,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
             audio: true,
             videos: true,
             documents: true
-        },
+        } as { [key: string]: boolean },
         spellCheck: true,
         replaceEmoji: true,
         enterIsSend: true
@@ -369,11 +371,26 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
         this.subscriptions.push(
             this.authService.currentUser$.subscribe(user => {
+                // If user emitted is same as current user and we are connected, do nothing
+                if (this.currentUser && user && this.currentUser._id === user._id && this.socketService.isConnected()) {
+                    return;
+                }
+
                 this.currentUser = user;
                 if (user && !this.socketService.isConnected()) {
                     this.socketService.connect(user._id);
+                    // Only load users if we haven't loaded them (or force reload if needed)
+                    // But relying on loadingUsers flag handles the concurrent case. 
                     this.loadUsers();
-                    this.setupSocketListeners();
+
+                    // Prevent duplicate listeners
+                    // Ideally check if listeners are already set up, but simple way is to clear old ones if any? 
+                    // For now, let's assume setupSocketListeners handles idempotency or we just call it once.
+                    // Actually, let's add a flag for listeners.
+                    if (!this.socketListenersSetup) {
+                        this.setupSocketListeners();
+                        this.socketListenersSetup = true;
+                    }
                 }
             })
         );
@@ -513,11 +530,18 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         return this.users.filter(u => u.username.toLowerCase().includes(this.searchQuery.toLowerCase()));
     }
 
+    loadingUsers = false;
+
     loadUsers(): void {
+        if (this.loadingUsers) return;
+        this.loadingUsers = true;
+
         forkJoin({
             users: this.chatService.getUsers(),
             groups: this.chatService.getGroups()
-        }).subscribe({
+        }).pipe(
+            finalize(() => this.loadingUsers = false)
+        ).subscribe({
             next: ({ users, groups }) => {
                 const mappedGroups: User[] = groups.map(g => ({
                     _id: g._id,
@@ -879,26 +903,26 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         const settings = this.chatSettings.autoDownload;
 
         if (type.startsWith('image/')) {
-            if (!settings.photos) {
+            if (!settings['photos']) {
                 this.permissionMessage = 'Photos are disabled in Media Settings.';
                 this.showPermissionModal = true;
                 return;
             }
         } else if (type.startsWith('video/')) {
-            if (!settings.videos) {
+            if (!settings['videos']) {
                 this.permissionMessage = 'Videos are disabled in Media Settings.';
                 this.showPermissionModal = true;
                 return;
             }
         } else if (type.startsWith('audio/')) {
-            if (!settings.audio) {
+            if (!settings['audio']) {
                 this.permissionMessage = 'Audio is disabled in Media Settings.';
                 this.showPermissionModal = true;
                 return;
             }
         } else {
             // Treat everything else as Documents
-            if (!settings.documents) {
+            if (!settings['documents']) {
                 this.permissionMessage = 'Documents are disabled in Media Settings.';
                 this.showPermissionModal = true;
                 return;
@@ -1085,7 +1109,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     async startRecording(): Promise<void> {
         // --- Permission Check ---
-        if (!this.chatSettings.autoDownload.audio) {
+        if (!this.chatSettings.autoDownload['audio']) {
             this.permissionMessage = 'Audio is disabled in Media Settings. Cannot record voice notes.';
             this.showPermissionModal = true;
             return;
@@ -1312,10 +1336,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         const type = message.messageType;
         const settings = this.chatSettings.autoDownload;
 
-        if (type === 'image' && settings.photos) return true;
-        if (type === 'video' && settings.videos) return true;
-        if (type === 'audio' && settings.audio) return true;
-        if (type === 'file' && settings.documents) return true;
+        if (type === 'image' && settings['photos']) return true;
+        if (type === 'video' && settings['videos']) return true;
+        if (type === 'audio' && settings['audio']) return true;
+        if (type === 'file' && settings['documents']) return true;
 
         // Note: Voice messages (audio with specific flag usually, but here just 'audio')
         // WhatsApp says "Voice messages are always automatically downloaded". 
